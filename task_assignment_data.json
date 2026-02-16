@@ -8,6 +8,15 @@
       ],
       "created_at": "2026-02-16T13:05:56.079753",
       "created_by": "John Doe"
+    },
+    "TASK_002": {
+      "name": "second task",
+      "priority": "P0 - Critical",
+      "languages": [
+        "English"
+      ],
+      "created_at": "2026-02-16T13:06:31.393740",
+      "created_by": "Julian ABC"
     }
   },
   "assignments": {
