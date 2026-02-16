@@ -5,7 +5,9 @@ from datetime import datetime, timedelta
 import json
 from collections import Counter, defaultdict
 import statistics
-from supabase import create_client, Client
+import requests
+from typing import Dict, List, Any
+import os
 
 # Page config
 st.set_page_config(
@@ -14,152 +16,163 @@ st.set_page_config(
     layout="wide"
 )
 
-# Supabase Connection
-@st.cache_resource
-def get_supabase_client():
-    """Create Supabase client"""
-    url = st.secrets["supabase"]["url"]
-    key = st.secrets["supabase"]["key"]
-    return create_client(url, key)
+# GitHub Configuration
+GITHUB_TOKEN = st.secrets.get("github", {}).get("token", "")
+GITHUB_REPO = st.secrets.get("github", {}).get("repo", "")  # format: "username/repo"
+GITHUB_BRANCH = st.secrets.get("github", {}).get("branch", "main")
+DATA_FILE = "task_assignment_data.json"
 
-def load_tasks():
-    """Load tasks from Supabase"""
+# GitHub API Functions
+def get_github_headers():
+    """Get headers for GitHub API requests"""
+    return {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+
+def get_data_from_github():
+    """Load data from GitHub"""
+    if not GITHUB_TOKEN or not GITHUB_REPO:
+        return None
+    
     try:
-        supabase = get_supabase_client()
-        response = supabase.table("tasks").select("*").execute()
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{DATA_FILE}?ref={GITHUB_BRANCH}"
+        response = requests.get(url, headers=get_github_headers())
         
-        tasks = {}
-        for row in response.data:
-            tasks[row['task_id']] = {
-                'name': row['name'],
-                'priority': row['priority'],
-                'languages': row['languages'].split(',') if row['languages'] else [],
-                'created_at': row['created_at'],
-                'created_by': row['created_by']
-            }
-        return tasks
+        if response.status_code == 200:
+            content = response.json()
+            import base64
+            data = json.loads(base64.b64decode(content['content']).decode('utf-8'))
+            return data, content['sha']
+        elif response.status_code == 404:
+            # File doesn't exist yet, return empty structure
+            return {
+                "tasks": {},
+                "assignments": {},
+                "completed_tasks": [],
+                "task_counter": 1
+            }, None
+        else:
+            st.error(f"GitHub API error: {response.status_code}")
+            return None, None
     except Exception as e:
-        st.error(f"Error loading tasks: {e}")
-        return {}
+        st.error(f"Error loading data from GitHub: {e}")
+        return None, None
 
-def save_task(task_id, task_info):
-    """Save a task to Supabase"""
+def save_data_to_github(data, sha=None):
+    """Save data to GitHub"""
+    if not GITHUB_TOKEN or not GITHUB_REPO:
+        st.error("GitHub configuration missing in secrets")
+        return False
+    
     try:
-        supabase = get_supabase_client()
+        import base64
+        content = base64.b64encode(json.dumps(data, indent=2).encode('utf-8')).decode('utf-8')
         
-        data = {
-            'task_id': task_id,
-            'name': task_info['name'],
-            'priority': task_info['priority'],
-            'languages': ','.join(task_info['languages']),
-            'created_at': task_info['created_at'],
-            'created_by': task_info['created_by']
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{DATA_FILE}"
+        
+        payload = {
+            "message": f"Update task data - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            "content": content,
+            "branch": GITHUB_BRANCH
         }
         
-        # Upsert (insert or update)
-        supabase.table("tasks").upsert(data).execute()
+        if sha:
+            payload["sha"] = sha
         
+        response = requests.put(url, json=payload, headers=get_github_headers())
+        
+        if response.status_code in [200, 201]:
+            return True
+        else:
+            st.error(f"GitHub save error: {response.status_code} - {response.text}")
+            return False
     except Exception as e:
-        st.error(f"Error saving task: {e}")
+        st.error(f"Error saving to GitHub: {e}")
+        return False
+
+# Data Management Functions
+@st.cache_data(ttl=30)  # Cache for 30 seconds to reduce API calls
+def load_all_data():
+    """Load all data from GitHub"""
+    data, sha = get_data_from_github()
+    if data:
+        return data, sha
+    return {
+        "tasks": {},
+        "assignments": {},
+        "completed_tasks": [],
+        "task_counter": 1
+    }, None
+
+def save_all_data(data):
+    """Save all data to GitHub"""
+    _, current_sha = get_data_from_github()
+    success = save_data_to_github(data, current_sha)
+    if success:
+        st.cache_data.clear()  # Clear cache to force reload
+    return success
+
+def load_tasks():
+    """Load tasks from storage"""
+    data, _ = load_all_data()
+    return data.get("tasks", {})
+
+def save_task(task_id, task_info):
+    """Save a task"""
+    data, _ = load_all_data()
+    data["tasks"][task_id] = task_info
+    if save_all_data(data):
+        st.success("Task saved!")
 
 def delete_task(task_id):
-    """Delete a task from Supabase"""
-    try:
-        supabase = get_supabase_client()
-        
-        # Delete task
-        supabase.table("tasks").delete().eq("task_id", task_id).execute()
-        
-        # Delete assignments
-        supabase.table("assignments").delete().eq("task_id", task_id).execute()
-        
-    except Exception as e:
-        st.error(f"Error deleting task: {e}")
+    """Delete a task"""
+    data, _ = load_all_data()
+    if task_id in data["tasks"]:
+        del data["tasks"][task_id]
+    if task_id in data["assignments"]:
+        del data["assignments"][task_id]
+    save_all_data(data)
 
 def load_assignments():
-    """Load assignments from Supabase"""
-    try:
-        supabase = get_supabase_client()
-        response = supabase.table("assignments").select("*").execute()
-        
-        assignments = defaultdict(list)
-        for row in response.data:
-            assignments[row['task_id']].append(row['tester_name'])
-        
-        return dict(assignments)
-    except Exception as e:
-        st.error(f"Error loading assignments: {e}")
-        return {}
+    """Load assignments"""
+    data, _ = load_all_data()
+    return data.get("assignments", {})
 
 def save_assignments(task_id, testers):
-    """Save assignments to Supabase"""
-    try:
-        supabase = get_supabase_client()
-        
-        # Delete existing assignments for this task
-        supabase.table("assignments").delete().eq("task_id", task_id).execute()
-        
-        # Add new assignments
-        for tester in testers:
-            supabase.table("assignments").insert({
-                'task_id': task_id,
-                'tester_name': tester
-            }).execute()
-            
-    except Exception as e:
-        st.error(f"Error saving assignments: {e}")
+    """Save assignments"""
+    data, _ = load_all_data()
+    data["assignments"][task_id] = testers
+    save_all_data(data)
 
 def load_completed_tasks():
-    """Load completed tasks from Supabase"""
-    try:
-        supabase = get_supabase_client()
-        response = supabase.table("completed_tasks").select("*").execute()
-        
-        completed = []
-        for row in response.data:
-            completed.append({
-                'task_id': row['task_id'],
-                'completed_by': row['completed_by'],
-                'completed_at': row['completed_at']
-            })
-        return completed
-    except Exception as e:
-        st.error(f"Error loading completed tasks: {e}")
-        return []
+    """Load completed tasks"""
+    data, _ = load_all_data()
+    return data.get("completed_tasks", [])
 
 def mark_task_completed(task_id, completed_by):
     """Mark a task as completed"""
-    try:
-        supabase = get_supabase_client()
-        
-        supabase.table("completed_tasks").insert({
-            'task_id': task_id,
-            'completed_by': completed_by
-        }).execute()
-        
-    except Exception as e:
-        st.error(f"Error marking task completed: {e}")
+    data, _ = load_all_data()
+    data["completed_tasks"].append({
+        'task_id': task_id,
+        'completed_by': completed_by,
+        'completed_at': datetime.now().isoformat()
+    })
+    save_all_data(data)
 
 def get_task_counter():
     """Get the next task counter"""
-    tasks = load_tasks()
-    if not tasks:
-        return 1
-    
-    max_num = 0
-    for task_id in tasks.keys():
-        try:
-            num = int(task_id.split('_')[1])
-            max_num = max(max_num, num)
-        except:
-            pass
-    
-    return max_num + 1
+    data, _ = load_all_data()
+    counter = data.get("task_counter", 1)
+    data["task_counter"] = counter + 1
+    save_all_data(data)
+    return counter
 
 # Initialize session state
 if 'roster_data' not in st.session_state:
     st.session_state.roster_data = None
 if 'current_user' not in st.session_state:
+    # Try to get from localStorage via query params
     query_params = st.query_params
     st.session_state.current_user = query_params.get('user', None)
 if 'show_conflict_message' not in st.session_state:
@@ -167,7 +180,7 @@ if 'show_conflict_message' not in st.session_state:
 if 'last_conflict_message' not in st.session_state:
     st.session_state.last_conflict_message = None
 
-# Helper Functions
+# Helper Functions (same as before)
 def normalize_column_names(df):
     """Normalize column names"""
     first_col = df.columns[0]
@@ -432,7 +445,7 @@ def generate_report():
             </table>
         </div>
         <div class="footer">
-            <p>Task Assignment Tool v3.3 | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p>Task Assignment Tool v4.0 | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
         </div>
     </div>
     </body>
@@ -446,8 +459,44 @@ def dismiss_conflict_message():
     st.session_state.show_conflict_message = False
     st.session_state.last_conflict_message = None
 
+# Add custom CSS for persistent user
+st.markdown("""
+<script>
+    // Save user to localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const user = urlParams.get('user');
+    if (user) {
+        localStorage.setItem('taskAssignmentUser', user);
+    }
+    
+    // Restore user from localStorage if not in URL
+    if (!user) {
+        const savedUser = localStorage.getItem('taskAssignmentUser');
+        if (savedUser) {
+            const newUrl = window.location.pathname + '?user=' + encodeURIComponent(savedUser);
+            window.history.replaceState({}, '', newUrl);
+            window.location.reload();
+        }
+    }
+</script>
+""", unsafe_allow_html=True)
+
 # Main UI
 st.title("📋 Team Task Assignment Tool")
+
+# Check GitHub configuration
+if not GITHUB_TOKEN or not GITHUB_REPO:
+    st.error("⚠️ GitHub configuration missing!")
+    st.info("""
+    Please add the following to your Streamlit secrets:
+    ```toml
+    [github]
+    token = "your-github-personal-access-token"
+    repo = "username/repository-name"
+    branch = "main"
+    ```
+    """)
+    st.stop()
 
 # User identification
 if st.session_state.current_user is None:
@@ -485,7 +534,7 @@ if st.session_state.current_user:
     # Sidebar
     with st.sidebar:
         st.header("📊 Team Roster")
-        st.info("💡 Export from Numbers as Excel (.xlsx) or CSV")
+        st.info("💡 Export from Numbers as CSV (.csv) for best results")
         
         uploaded_file = st.file_uploader("Upload roster", type=['xlsx', 'csv'])
         
@@ -522,10 +571,10 @@ if st.session_state.current_user:
                 st.metric("Total Tasks", len(tasks))
                 
                 if st.button("🔄 Refresh", use_container_width=True):
-                    st.cache_resource.clear()
+                    st.cache_data.clear()
                     st.rerun()
             except Exception as e:
-                st.error(f"Connection error: {e}")
+                st.error(f"Data loading error: {e}")
         
         # Report
         if st.session_state.roster_data is not None:
@@ -783,10 +832,9 @@ if st.session_state.current_user:
                             st.divider()
         
         except Exception as e:
-            st.error(f"Database connection error: {e}")
+            st.error(f"Data error: {e}")
             st.info("Click 'Refresh' in the sidebar to retry")
 
 # Footer
 st.divider()
-st.caption("Team Task Assignment Tool v3.3 | Shared Database with Supabase")
-
+st.caption("Team Task Assignment Tool v4.0 | GitHub Storage")
