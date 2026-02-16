@@ -10,7 +10,15 @@
       "created_by": "John Doe"
     }
   },
-  "assignments": {},
+  "assignments": {
+    "TASK_001": [
+      "Jhon Doe1",
+      "Jhon Doe10",
+      "Jhon Doe11",
+      "Jhon Doe12",
+      "Jhon Doe13"
+    ]
+  },
   "completed_tasks": [],
   "task_counter": 2
 }
