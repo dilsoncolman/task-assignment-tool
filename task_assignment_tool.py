@@ -50,7 +50,8 @@ def get_data_from_github():
                 "tasks": {},
                 "assignments": {},
                 "completed_tasks": [],
-                "task_counter": 1
+                "task_counter": 1,
+                "assignment_history": []  # New field for tracking all assignments
             }, None
         else:
             st.error(f"GitHub API error: {response.status_code}")
@@ -97,12 +98,16 @@ def load_all_data():
     """Load all data from GitHub"""
     data, sha = get_data_from_github()
     if data:
+        # Ensure assignment_history exists
+        if "assignment_history" not in data:
+            data["assignment_history"] = []
         return data, sha
     return {
         "tasks": {},
         "assignments": {},
         "completed_tasks": [],
-        "task_counter": 1
+        "task_counter": 1,
+        "assignment_history": []
     }, None
 
 def save_all_data(data):
@@ -140,8 +145,22 @@ def load_assignments():
     return data.get("assignments", {})
 
 def save_assignments(task_id, testers):
-    """Save assignments"""
+    """Save assignments and track history"""
     data, _ = load_all_data()
+    
+    # Track assignment history
+    task_info = data["tasks"].get(task_id, {})
+    for tester in testers:
+        data["assignment_history"].append({
+            "task_id": task_id,
+            "task_name": task_info.get("name", "Unknown"),
+            "tester": tester,
+            "assigned_at": datetime.now().isoformat(),
+            "assigned_by": st.session_state.current_user,
+            "languages": task_info.get("languages", []),
+            "priority": task_info.get("priority", "Unknown")
+        })
+    
     data["assignments"][task_id] = testers
     save_all_data(data)
 
@@ -153,10 +172,21 @@ def load_completed_tasks():
 def mark_task_completed(task_id, completed_by):
     """Mark a task as completed"""
     data, _ = load_all_data()
+    
+    # Get task info before marking complete
+    task_info = data["tasks"].get(task_id, {})
+    assignees = data["assignments"].get(task_id, [])
+    
     data["completed_tasks"].append({
         'task_id': task_id,
+        'task_name': task_info.get('name', 'Unknown'),
         'completed_by': completed_by,
-        'completed_at': datetime.now().isoformat()
+        'completed_at': datetime.now().isoformat(),
+        'assignees': assignees,
+        'languages': task_info.get('languages', []),
+        'priority': task_info.get('priority', 'Unknown'),
+        'created_by': task_info.get('created_by', 'Unknown'),
+        'created_at': task_info.get('created_at', '')
     })
     save_all_data(data)
 
@@ -167,6 +197,11 @@ def get_task_counter():
     data["task_counter"] = counter + 1
     save_all_data(data)
     return counter
+
+def load_assignment_history():
+    """Load assignment history"""
+    data, _ = load_all_data()
+    return data.get("assignment_history", [])
 
 # Initialize session state
 if 'roster_data' not in st.session_state:
@@ -180,7 +215,7 @@ if 'show_conflict_message' not in st.session_state:
 if 'last_conflict_message' not in st.session_state:
     st.session_state.last_conflict_message = None
 
-# Helper Functions (same as before)
+# Helper Functions
 def normalize_column_names(df):
     """Normalize column names"""
     first_col = df.columns[0]
@@ -336,18 +371,23 @@ def get_available_testers(language_requirements, match_all=False):
     available_testers.sort(key=lambda x: (-len(x['matching_languages']), not x['is_available'], x['name']))
     return available_testers
 
-def generate_report():
-    """Generate analytics report"""
+def generate_detailed_report():
+    """Generate comprehensive analytics report"""
     tasks = load_tasks()
     assignments = load_assignments()
     completed_tasks = load_completed_tasks()
+    assignment_history = load_assignment_history()
     completed_task_ids = [ct['task_id'] for ct in completed_tasks]
     
     total_tasks = len(tasks)
     active_tasks = [(tid, tinfo) for tid, tinfo in tasks.items() if tid not in completed_task_ids]
     now = datetime.now()
+    week_ago = now - timedelta(days=7)
+    month_ago = now - timedelta(days=30)
     
     total_testers = len(st.session_state.roster_data) if st.session_state.roster_data is not None else 0
+    
+    # Active assignments
     assigned_testers = set()
     tester_workload = defaultdict(int)
     
@@ -357,26 +397,69 @@ def generate_report():
                 assigned_testers.add(tester)
                 tester_workload[tester] += 1
     
+    # Historical analysis
+    tester_assignment_count = defaultdict(int)
+    tester_weekly_count = defaultdict(int)
+    tester_monthly_count = defaultdict(int)
+    language_demand = defaultdict(int)
+    language_weekly_demand = defaultdict(int)
+    priority_distribution = defaultdict(int)
+    
+    # Analyze assignment history
+    for record in assignment_history:
+        tester_assignment_count[record['tester']] += 1
+        
+        assigned_date = datetime.fromisoformat(record['assigned_at'].replace('Z', '+00:00'))
+        if assigned_date >= week_ago:
+            tester_weekly_count[record['tester']] += 1
+        if assigned_date >= month_ago:
+            tester_monthly_count[record['tester']] += 1
+        
+        for lang in record.get('languages', []):
+            language_demand[lang] += 1
+            if assigned_date >= week_ago:
+                language_weekly_demand[lang] += 1
+    
+    # Analyze completed tasks
+    completion_times = []
+    tester_completion_count = defaultdict(int)
+    
+    for ct in completed_tasks:
+        tester_completion_count[ct['completed_by']] += 1
+        
+        if 'created_at' in ct and ct['created_at']:
+            try:
+                created = datetime.fromisoformat(ct['created_at'].replace('Z', '+00:00'))
+                completed = datetime.fromisoformat(ct['completed_at'].replace('Z', '+00:00'))
+                completion_time = (completed - created).total_seconds() / 3600  # hours
+                completion_times.append(completion_time)
+            except:
+                pass
+    
+    avg_completion_time = statistics.mean(completion_times) if completion_times else 0
+    
     utilization_rate = (len(assigned_testers) / total_testers * 100) if total_testers > 0 else 0
     completion_rate = (len(completed_tasks) / total_tasks * 100) if total_tasks > 0 else 0
     
-    priority_count = Counter()
+    # Priority analysis
     for task_info in tasks.values():
-        priority_count[task_info['priority']] += 1
+        priority_distribution[task_info['priority']] += 1
     
+    # Generate HTML report
     html = f"""
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Task Assignment Report</title>
+        <title>Comprehensive Task Assignment Report</title>
         <meta charset="UTF-8">
         <style>
             body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; margin: 0; }}
-            .container {{ max-width: 1200px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 25px 50px rgba(0,0,0,0.2); overflow: hidden; }}
+            .container {{ max-width: 1400px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 25px 50px rgba(0,0,0,0.2); overflow: hidden; }}
             .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; text-align: center; }}
             .header h1 {{ font-size: 2.5em; margin: 0 0 10px 0; }}
             .content {{ padding: 40px; }}
             h2 {{ color: #667eea; border-bottom: 3px solid #667eea; padding-bottom: 10px; margin-top: 30px; }}
+            h3 {{ color: #764ba2; margin-top: 20px; }}
             .metrics {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }}
             .metric {{ background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 25px; border-radius: 15px; text-align: center; }}
             .metric .value {{ font-size: 2.5em; font-weight: bold; color: #667eea; }}
@@ -390,13 +473,17 @@ def generate_report():
             .tag-high {{ background: #fd7e14; color: white; }}
             .tag-medium {{ background: #ffc107; color: #333; }}
             .tag-low {{ background: #28a745; color: white; }}
+            .highlight {{ background: #fff3cd; padding: 15px; border-radius: 10px; margin: 10px 0; }}
+            .chart {{ margin: 20px 0; }}
+            .bar {{ background: #667eea; height: 25px; margin: 5px 0; border-radius: 5px; position: relative; }}
+            .bar-label {{ position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: white; font-weight: bold; }}
             .footer {{ background: #f8f9fa; padding: 20px; text-align: center; color: #666; }}
         </style>
     </head>
     <body>
     <div class="container">
         <div class="header">
-            <h1>📊 Task Assignment Report</h1>
+            <h1>📊 Comprehensive Task Assignment Report</h1>
             <p>Generated: {now.strftime('%B %d, %Y at %I:%M %p')}</p>
             <p>By: {st.session_state.current_user}</p>
         </div>
@@ -409,43 +496,127 @@ def generate_report():
                 <div class="metric"><div class="value">{completion_rate:.1f}%</div><div class="label">Completion Rate</div></div>
             </div>
             
+            <div class="highlight">
+                <strong>Key Insights:</strong>
+                <ul>
+                    <li>Average task completion time: {avg_completion_time:.1f} hours</li>
+                    <li>Most active tester this week: {max(tester_weekly_count.items(), key=lambda x: x[1])[0] if tester_weekly_count else 'N/A'} ({max(tester_weekly_count.values()) if tester_weekly_count else 0} tasks)</li>
+                    <li>Most demanded language: {max(language_demand.items(), key=lambda x: x[1])[0] if language_demand else 'N/A'} ({max(language_demand.values()) if language_demand else 0} tasks)</li>
+                </ul>
+            </div>
+            
             <h2>👥 Resource Utilization</h2>
             <div class="metrics">
                 <div class="metric"><div class="value">{total_testers}</div><div class="label">Total Testers</div></div>
-                <div class="metric"><div class="value">{len(assigned_testers)}</div><div class="label">Assigned</div></div>
-                <div class="metric"><div class="value">{utilization_rate:.1f}%</div><div class="label">Utilization</div></div>
-                <div class="metric"><div class="value">{total_testers - len(assigned_testers)}</div><div class="label">Available</div></div>
+                <div class="metric"><div class="value">{len(assigned_testers)}</div><div class="label">Currently Assigned</div></div>
+                <div class="metric"><div class="value">{utilization_rate:.1f}%</div><div class="label">Current Utilization</div></div>
+                <div class="metric"><div class="value">{len(tester_assignment_count)}</div><div class="label">Ever Assigned</div></div>
             </div>
             
-            <h2>🎯 Priority Distribution</h2>
+            <h3>📊 Tester Activity (This Week)</h3>
             <table>
-                <tr><th>Priority</th><th>Count</th><th>Percentage</th></tr>
+                <tr><th>Tester</th><th>Tasks This Week</th><th>Tasks This Month</th><th>Total Tasks</th><th>Completed</th><th>Current Load</th></tr>
     """
     
-    for priority in ["P0 - Critical", "P1 - High", "P2 - Medium", "P3 - Low"]:
-        count = priority_count.get(priority, 0)
-        pct = (count / total_tasks * 100) if total_tasks > 0 else 0
-        tag_class = {'P0 - Critical': 'tag-critical', 'P1 - High': 'tag-high', 'P2 - Medium': 'tag-medium', 'P3 - Low': 'tag-low'}.get(priority, '')
-        html += f'<tr><td><span class="tag {tag_class}">{priority}</span></td><td>{count}</td><td>{pct:.1f}%</td></tr>'
+    # Sort testers by weekly activity
+    all_testers = set()
+    if st.session_state.roster_data is not None:
+        for _, row in st.session_state.roster_data.iterrows():
+            name = f"{row.get('first_name', '')} {row.get('last_name', '')}".strip()
+            if name:
+                all_testers.add(name)
+    
+    tester_stats = []
+    for tester in all_testers:
+        weekly = tester_weekly_count.get(tester, 0)
+        monthly = tester_monthly_count.get(tester, 0)
+        total = tester_assignment_count.get(tester, 0)
+        completed = tester_completion_count.get(tester, 0)
+        current = tester_workload.get(tester, 0)
+        tester_stats.append((tester, weekly, monthly, total, completed, current))
+    
+    tester_stats.sort(key=lambda x: x[1], reverse=True)  # Sort by weekly activity
+    
+    for tester, weekly, monthly, total, completed, current in tester_stats[:20]:  # Top 20
+        html += f'<tr><td><strong>{tester}</strong></td><td>{weekly}</td><td>{monthly}</td><td>{total}</td><td>{completed}</td><td>{current}</td></tr>'
     
     html += """
             </table>
             
-            <h2>📋 Active Tasks</h2>
+            <h2>🌐 Language Demand Analysis</h2>
+            <h3>Language Requirements (All Time)</h3>
+            <div class="chart">
+    """
+    
+    # Language demand chart
+    if language_demand:
+        max_demand = max(language_demand.values())
+        for lang, count in sorted(language_demand.items(), key=lambda x: x[1], reverse=True):
+            width = (count / max_demand * 100) if max_demand > 0 else 0
+            weekly = language_weekly_demand.get(lang, 0)
+            html += f'''
+                <div style="margin: 10px 0;">
+                    <div style="display: flex; align-items: center;">
+                        <div style="width: 150px; font-weight: bold;">{lang}</div>
+                        <div style="flex: 1; position: relative;">
+                            <div class="bar" style="width: {width}%;">
+                                <span class="bar-label">{count} total ({weekly} this week)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            '''
+    
+    html += """
+            </div>
+            
+            <h2>🎯 Priority Distribution</h2>
             <table>
-                <tr><th>Task</th><th>Priority</th><th>Languages</th><th>Assignees</th><th>Created By</th></tr>
+                <tr><th>Priority</th><th>Total Tasks</th><th>Active</th><th>Completed</th><th>Completion Rate</th></tr>
+    """
+    
+    for priority in ["P0 - Critical", "P1 - High", "P2 - Medium", "P3 - Low"]:
+        total_priority = priority_distribution.get(priority, 0)
+        completed_priority = len([ct for ct in completed_tasks if ct.get('priority') == priority])
+        active_priority = total_priority - completed_priority
+        rate = (completed_priority / total_priority * 100) if total_priority > 0 else 0
+        tag_class = {'P0 - Critical': 'tag-critical', 'P1 - High': 'tag-high', 'P2 - Medium': 'tag-medium', 'P3 - Low': 'tag-low'}.get(priority, '')
+        html += f'<tr><td><span class="tag {tag_class}">{priority}</span></td><td>{total_priority}</td><td>{active_priority}</td><td>{completed_priority}</td><td>{rate:.1f}%</td></tr>'
+    
+    html += """
+            </table>
+            
+            <h2>📋 Active Tasks Details</h2>
+            <table>
+                <tr><th>Task</th><th>Priority</th><th>Languages</th><th>Assignees</th><th>Created By</th><th>Created</th></tr>
     """
     
     for task_id, task_info in active_tasks:
         assignees = assignments.get(task_id, [])
+        created_date = datetime.fromisoformat(task_info['created_at'].replace('Z', '+00:00')).strftime('%m/%d/%Y') if 'created_at' in task_info else 'N/A'
         tag_class = {'P0 - Critical': 'tag-critical', 'P1 - High': 'tag-high', 'P2 - Medium': 'tag-medium', 'P3 - Low': 'tag-low'}.get(task_info['priority'], '')
-        html += f'<tr><td><strong>{task_info["name"]}</strong></td><td><span class="tag {tag_class}">{task_info["priority"]}</span></td><td>{", ".join(task_info["languages"])}</td><td>{len(assignees)}</td><td>{task_info["created_by"]}</td></tr>'
+        html += f'<tr><td><strong>{task_info["name"]}</strong></td><td><span class="tag {tag_class}">{task_info["priority"]}</span></td><td>{", ".join(task_info["languages"])}</td><td>{", ".join(assignees)}</td><td>{task_info["created_by"]}</td><td>{created_date}</td></tr>'
+    
+    html += """
+            </table>
+            
+            <h2>✅ Recently Completed Tasks</h2>
+            <table>
+                <tr><th>Task</th><th>Priority</th><th>Languages</th><th>Completed By</th><th>Completion Time</th><th>Assignees</th></tr>
+    """
+    
+    # Show last 10 completed tasks
+    for ct in completed_tasks[-10:]:
+        completion_date = datetime.fromisoformat(ct['completed_at'].replace('Z', '+00:00')).strftime('%m/%d/%Y %I:%M %p')
+        tag_class = {'P0 - Critical': 'tag-critical', 'P1 - High': 'tag-high', 'P2 - Medium': 'tag-medium', 'P3 - Low': 'tag-low'}.get(ct.get('priority', ''), '')
+        assignees = ", ".join(ct.get('assignees', []))
+        html += f'<tr><td><strong>{ct.get("task_name", "Unknown")}</strong></td><td><span class="tag {tag_class}">{ct.get("priority", "Unknown")}</span></td><td>{", ".join(ct.get("languages", []))}</td><td>{ct["completed_by"]}</td><td>{completion_date}</td><td>{assignees}</td></tr>'
     
     html += f"""
             </table>
         </div>
         <div class="footer">
-            <p>Task Assignment Tool v4.0 | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p>Task Assignment Tool v4.1 | Comprehensive Analytics Report | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
         </div>
     </div>
     </body>
@@ -558,33 +729,72 @@ if st.session_state.current_user:
             except Exception as e:
                 st.error(f"Error: {e}")
         
-        # Task summary
+        # Live task summary
         if st.session_state.roster_data is not None:
             try:
                 tasks = load_tasks()
+                assignments = load_assignments()
                 completed = load_completed_tasks()
                 completed_ids = [c['task_id'] for c in completed]
-                active = [t for t in tasks if t not in completed_ids]
+                active_tasks = [t for t in tasks if t not in completed_ids]
                 
                 st.divider()
-                st.metric("Active Tasks", len(active))
-                st.metric("Total Tasks", len(tasks))
+                st.subheader("📊 Live Dashboard")
                 
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Active Tasks", len(active_tasks))
+                    st.metric("Completed Today", len([c for c in completed if datetime.fromisoformat(c['completed_at'].replace('Z', '+00:00')).date() == datetime.now().date()]))
+                with col2:
+                    st.metric("Total Tasks", len(tasks))
+                    st.metric("Team Size", len(st.session_state.roster_data))
+                
+                # Current assignments
+                st.divider()
+                st.subheader("👥 Current Assignments")
+                
+                # Get current assignments
+                current_assignments = defaultdict(list)
+                for task_id in active_tasks:
+                    task_info = tasks[task_id]
+                    for assignee in assignments.get(task_id, []):
+                        current_assignments[assignee].append(task_info['name'])
+                
+                if current_assignments:
+                    for assignee, task_names in sorted(current_assignments.items()):
+                        with st.expander(f"{assignee} ({len(task_names)} tasks)"):
+                            for task_name in task_names:
+                                st.write(f"• {task_name}")
+                else:
+                    st.info("No active assignments")
+                
+                st.divider()
                 if st.button("🔄 Refresh", use_container_width=True):
                     st.cache_data.clear()
                     st.rerun()
+                    
             except Exception as e:
                 st.error(f"Data loading error: {e}")
         
-        # Report
+        # Reports section
         if st.session_state.roster_data is not None:
             st.divider()
-            if st.button("📊 Generate Report", type="primary", use_container_width=True):
-                report = generate_report()
+            st.subheader("📈 Reports")
+            
+            col1, col2 = st.columns(2)
+            with col1:
+                if st.button("📊 Basic Report", use_container_width=True):
+                    st.session_state.report_type = "basic"
+            with col2:
+                if st.button("📊 Detailed Report", type="primary", use_container_width=True):
+                    st.session_state.report_type = "detailed"
+            
+            if 'report_type' in st.session_state:
+                report = generate_detailed_report()
                 st.download_button(
-                    "📥 Download",
+                    "📥 Download Report",
                     data=report,
-                    file_name=f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
+                    file_name=f"detailed_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
                     mime="text/html",
                     use_container_width=True
                 )
@@ -775,8 +985,9 @@ if st.session_state.current_user:
             
             # Tab 3: Status
             with tab3:
-                st.header("Task Status")
+                st.header("Task Status Overview")
                 
+                # Summary metrics
                 col1, col2, col3, col4 = st.columns(4)
                 with col1:
                     st.metric("Active", len([t for t in tasks if t not in completed_task_ids]))
@@ -785,11 +996,32 @@ if st.session_state.current_user:
                 with col3:
                     st.metric("Total", len(tasks))
                 with col4:
-                    st.metric("Testers", len(st.session_state.roster_data))
+                    st.metric("Team Size", len(st.session_state.roster_data))
                 
                 st.divider()
                 
-                # Unassigned
+                # Analytics section
+                st.subheader("📊 Quick Analytics")
+                
+                # Language demand this week
+                assignment_history = load_assignment_history()
+                week_ago = datetime.now() - timedelta(days=7)
+                language_weekly_demand = defaultdict(int)
+                
+                for record in assignment_history:
+                    assigned_date = datetime.fromisoformat(record['assigned_at'].replace('Z', '+00:00'))
+                    if assigned_date >= week_ago:
+                        for lang in record.get('languages', []):
+                            language_weekly_demand[lang] += 1
+                
+                if language_weekly_demand:
+                    st.write("**Most Demanded Languages This Week:**")
+                    for lang, count in sorted(language_weekly_demand.items(), key=lambda x: x[1], reverse=True)[:5]:
+                        st.write(f"• {lang}: {count} tasks")
+                
+                st.divider()
+                
+                # Unassigned testers
                 all_testers = set()
                 assigned = set()
                 
@@ -805,31 +1037,30 @@ if st.session_state.current_user:
                 unassigned = all_testers - assigned
                 
                 if unassigned:
-                    with st.expander(f"⚠️ Unassigned ({len(unassigned)})"):
+                    with st.expander(f"⚠️ Unassigned Testers ({len(unassigned)})"):
                         cols = st.columns(3)
                         for i, name in enumerate(sorted(unassigned)):
                             with cols[i % 3]:
                                 st.write(f"• {name}")
                 
+                # Active and completed tasks
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    st.subheader("🔴 Active")
+                    st.subheader("🔴 Active Tasks")
                     for tid in [t for t in tasks if t not in completed_task_ids]:
                         info = tasks[tid]
                         assignees = assignments.get(tid, [])
                         st.write(f"**{info['name']}**")
-                        st.caption(f"{info['priority']} | {len(assignees)} assignees")
+                        st.caption(f"{info['priority']} | {len(assignees)} assignees | {', '.join(info['languages'])}")
                         st.divider()
                 
                 with col2:
-                    st.subheader("✅ Completed")
+                    st.subheader("✅ Recently Completed")
                     for ct in completed_tasks[-10:]:
-                        if ct['task_id'] in tasks:
-                            info = tasks[ct['task_id']]
-                            st.write(f"**{info['name']}**")
-                            st.caption(f"By {ct['completed_by']}")
-                            st.divider()
+                        st.write(f"**{ct.get('task_name', 'Unknown')}**")
+                        st.caption(f"By {ct['completed_by']} | {datetime.fromisoformat(ct['completed_at'].replace('Z', '+00:00')).strftime('%m/%d %I:%M %p')}")
+                        st.divider()
         
         except Exception as e:
             st.error(f"Data error: {e}")
@@ -837,4 +1068,4 @@ if st.session_state.current_user:
 
 # Footer
 st.divider()
-st.caption("Team Task Assignment Tool v4.0 | GitHub Storage")
+st.caption("Team Task Assignment Tool v4.1 | GitHub Storage | Enhanced Analytics")
