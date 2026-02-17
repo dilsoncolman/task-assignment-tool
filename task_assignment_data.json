@@ -38,6 +38,15 @@
       ],
       "created_at": "2026-02-17T11:48:42.940225",
       "created_by": "John Doe"
+    },
+    "TASK_008": {
+      "name": "t5t5t5t",
+      "priority": "P0 - Critical",
+      "languages": [
+        "Russian"
+      ],
+      "created_at": "2026-02-17T14:59:30.881931",
+      "created_by": "Anna Spin"
     }
   },
   "assignments": {
@@ -105,7 +114,7 @@
       "created_at": "2026-02-17T10:51:05.878965"
     }
   ],
-  "task_counter": 9,
+  "task_counter": 8,
   "assignment_history": [
     {
       "task_id": "TASK_002",
@@ -839,6 +848,6 @@
   ],
   "last_modified": {
     "user": "Anna Spin",
-    "timestamp": "2026-02-17T14:59:30.204099"
+    "timestamp": "2026-02-17T14:59:31.378566"
   }
 }
