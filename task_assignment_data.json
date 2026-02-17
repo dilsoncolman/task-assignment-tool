@@ -69,6 +69,9 @@
     ],
     "TASK_004": [
       "Jhon Doe13"
+    ],
+    "TASK_005": [
+      "Jhon Doe13"
     ]
   },
   "completed_tasks": [],
@@ -511,10 +514,21 @@
         "English"
       ],
       "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_005",
+      "task_name": "t3t3t3",
+      "tester": "Jhon Doe13",
+      "assigned_at": "2026-02-17T11:11:14.282979",
+      "assigned_by": "Anna Spin",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
     }
   ],
   "last_modified": {
     "user": "Anna Spin",
-    "timestamp": "2026-02-17T11:11:13.490474"
+    "timestamp": "2026-02-17T11:11:14.471018"
   }
 }
