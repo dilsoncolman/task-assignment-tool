@@ -699,41 +699,7 @@ def dismiss_conflict_message():
     st.session_state.show_conflict_message = False
     st.session_state.last_conflict_message = None
 
-# Add custom CSS for persistent user and chat styling
-st.markdown("""
-<style>
-/* Chat styling */
-.chat-container {
-    height: 400px;
-    overflow-y: auto;
-    padding: 10px;
-    background: #f8f9fa;
-    border-radius: 10px;
-    margin-bottom: 10px;
-}
-.chat-message {
-    margin-bottom: 10px;
-    padding: 8px 12px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-.chat-user {
-    font-weight: bold;
-    color: #667eea;
-}
-.chat-time {
-    font-size: 0.8em;
-    color: #999;
-}
-.chat-text {
-    margin-top: 4px;
-}
-/* Make the chat input look better */
-.stTextArea textarea {
-    font-size: 14px;
-}
-</style>
+# Add custom JavaScript for persistent user
 st.markdown("""
 <script>
     // Save user to localStorage
@@ -793,8 +759,6 @@ else:
                 st.query_params.clear()
                 st.rerun()
     
-# Replace the chat section in the previous code with this:
-
     # Chat Panel (Right Side)
     with col_chat:
         st.subheader("💬 Team Chat")
@@ -802,7 +766,7 @@ else:
         # Chat messages container
         messages, _ = load_chat_messages()
         
-        # Create a container for messages
+        # Create a container for messages with fixed height
         chat_container = st.container()
         
         with chat_container:
@@ -841,12 +805,8 @@ else:
             if refresh:
                 st.rerun()
         
-        # Auto-refresh mechanism
-        if len(messages) != st.session_state.last_message_count:
-            st.session_state.last_message_count = len(messages)
-            time.sleep(0.1)
-            st.rerun()
-
+        # Auto-refresh info
+        st.caption("Chat refreshes every 5 seconds")
 
 # Main interface
 if st.session_state.current_user:
@@ -1290,6 +1250,10 @@ if st.session_state.current_user:
 st.divider()
 st.caption("Team Task Assignment Tool v5.0 | GitHub Storage | Team Chat | Enhanced UI")
 
-# Auto-refresh for chat
-time.sleep(5)
-st.rerun()
+# Auto-refresh for chat every 5 seconds
+if st.session_state.current_user:
+    time.sleep(5)
+    messages, _ = load_chat_messages()
+    if len(messages) != st.session_state.last_message_count:
+        st.session_state.last_message_count = len(messages)
+        st.rerun()
