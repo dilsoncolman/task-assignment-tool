@@ -1001,7 +1001,15 @@ if st.session_state.current_user:
                                 st.write("🟢" if tester['is_available'] else "🔴")
                             
                             with col3:
-                                st.write(", ".join(tester['matching_languages']))
+                                # Show ALL languages, with matching ones in bold
+                                all_langs = sorted(tester['languages'])
+                                lang_display = []
+                                for lang in all_langs:
+                                    if lang in tester['matching_languages']:
+                                        lang_display.append(f"**{lang}**")
+                                    else:
+                                        lang_display.append(lang)
+                                st.markdown(", ".join(lang_display))
                             
                             with col4:
                                 if tester['assigned_tasks']:
@@ -1215,4 +1223,4 @@ if st.session_state.current_user:
 
 # Footer
 st.divider()
-st.caption("Team Task Assignment Tool v6.0 | GitHub Storage | Multi-User Support")
+st.caption("Team Task Assignment Tool v6.1 | GitHub Storage | Multi-User Support")
