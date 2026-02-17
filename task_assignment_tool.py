@@ -21,6 +21,7 @@ GITHUB_TOKEN = st.secrets.get("github", {}).get("token", "")
 GITHUB_REPO = st.secrets.get("github", {}).get("repo", "")  # format: "username/repo"
 GITHUB_BRANCH = st.secrets.get("github", {}).get("branch", "main")
 DATA_FILE = "task_assignment_data.json"
+CHAT_FILE = "chat_messages.json"  # New file for chat messages
 
 # GitHub API Functions
 def get_github_headers():
@@ -60,7 +61,7 @@ def get_data_from_github():
         st.error(f"Error loading data from GitHub: {e}")
         return None, None
 
-def save_data_to_github(data, sha=None):
+def save_data_to_github(data, sha=None, file_name=DATA_FILE):
     """Save data to GitHub"""
     if not GITHUB_TOKEN or not GITHUB_REPO:
         st.error("GitHub configuration missing in secrets")
@@ -70,10 +71,10 @@ def save_data_to_github(data, sha=None):
         import base64
         content = base64.b64encode(json.dumps(data, indent=2).encode('utf-8')).decode('utf-8')
         
-        url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{DATA_FILE}"
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{file_name}"
         
         payload = {
-            "message": f"Update task data - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            "message": f"Update {file_name} - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
             "content": content,
             "branch": GITHUB_BRANCH
         }
@@ -91,6 +92,37 @@ def save_data_to_github(data, sha=None):
     except Exception as e:
         st.error(f"Error saving to GitHub: {e}")
         return False
+
+# Chat Functions
+def load_chat_messages():
+    """Load chat messages from GitHub"""
+    try:
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{CHAT_FILE}?ref={GITHUB_BRANCH}"
+        response = requests.get(url, headers=get_github_headers())
+        
+        if response.status_code == 200:
+            content = response.json()
+            import base64
+            messages = json.loads(base64.b64decode(content['content']).decode('utf-8'))
+            return messages, content['sha']
+        elif response.status_code == 404:
+            # File doesn't exist yet
+            return [], None
+        else:
+            return [], None
+    except:
+        return [], None
+
+def save_chat_message(message):
+    """Save a new chat message"""
+    messages, sha = load_chat_messages()
+    
+    # Keep only last 100 messages to prevent file from growing too large
+    messages = messages[-99:] if messages else []
+    messages.append(message)
+    
+    _, current_sha = load_chat_messages()
+    return save_data_to_github(messages, current_sha, CHAT_FILE)
 
 # Data Management Functions
 @st.cache_data(ttl=30)  # Cache for 30 seconds to reduce API calls
@@ -140,9 +172,6 @@ def archive_and_reset_data():
         "archived_by": st.session_state.current_user,
         "data": current_data
     }
-    
-    # Save archive (you could save this to a separate file if needed)
-    archive_filename = f"archive_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
     
     # For now, we'll just reset the main data
     return reset_all_data()
@@ -245,6 +274,8 @@ if 'last_conflict_message' not in st.session_state:
     st.session_state.last_conflict_message = None
 if 'show_reset_confirmation' not in st.session_state:
     st.session_state.show_reset_confirmation = False
+if 'chat_input' not in st.session_state:
+    st.session_state.chat_input = ""
 
 # Helper Functions
 def normalize_column_names(df):
@@ -650,7 +681,7 @@ def generate_detailed_report():
             </table>
         </div>
         <div class="footer">
-            <p>Task Assignment Tool v4.2 | Comprehensive Analytics Report | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p>Task Assignment Tool v4.4 | Comprehensive Analytics Report | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
         </div>
     </div>
     </body>
@@ -846,6 +877,45 @@ if st.session_state.current_user:
                     use_container_width=True
                 )
             
+            # Chat Feature - NEW!
+            st.divider()
+            st.subheader("💬 Team Chat")
+            
+            # Display chat messages
+            messages, _ = load_chat_messages()
+            chat_container = st.container()
+            
+            with chat_container:
+                # Show last 10 messages
+                if messages:
+                    for msg in messages[-10:]:
+                        if msg.get('user') and msg.get('message'):
+                            st.caption(f"**{msg['user']}** - {msg.get('timestamp', '')}")
+                            st.write(msg['message'])
+                            st.divider()
+                else:
+                    st.info("No messages yet. Start a conversation!")
+            
+            # Chat input
+            chat_input = st.text_area("💬 Send a message to other team leads:", 
+                                 key="chat_input_widget",
+                                 height=80,
+                                 placeholder="Type your message here...")
+            
+            if st.button("📤 Send", use_container_width=True):
+                if st.session_state.chat_input_widget:
+                    new_message = {
+                        "user": st.session_state.current_user,
+                        "message": st.session_state.chat_input_widget,
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %I:%M %p")
+                    }
+                    if save_chat_message(new_message):
+                        st.success("Message sent!")
+                        st.cache_data.clear()
+                        st.rerun()
+                else:
+                    st.warning("Please type a message first")
+            
             # Data Management - More visible
             st.divider()
             st.subheader("🗄️ Data Management")
@@ -858,11 +928,14 @@ if st.session_state.current_user:
                 st.write("• All assignments")
                 st.write("• All history")
                 st.write("• All completed tasks")
+                st.write("• All chat messages")
                 
                 col1, col2 = st.columns(2)
                 with col1:
                     if st.button("✅ Yes, Reset Everything", type="primary", use_container_width=True):
                         if archive_and_reset_data():
+                            # Also clear chat
+                            save_data_to_github([], None, CHAT_FILE)
                             st.success("✅ All data has been reset!")
                             st.session_state.show_reset_confirmation = False
                             st.cache_data.clear()
@@ -1157,4 +1230,4 @@ if st.session_state.current_user:
 
 # Footer
 st.divider()
-st.caption("Team Task Assignment Tool v4.3 | GitHub Storage | Task-focused Sidebar | Data Reset Feature")
+st.caption("Team Task Assignment Tool v4.4 | GitHub Storage | Team Chat | Data Reset Feature")
