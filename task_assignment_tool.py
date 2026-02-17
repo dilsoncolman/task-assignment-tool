@@ -118,6 +118,35 @@ def save_all_data(data):
         st.cache_data.clear()  # Clear cache to force reload
     return success
 
+def reset_all_data():
+    """Reset all data to start fresh"""
+    data = {
+        "tasks": {},
+        "assignments": {},
+        "completed_tasks": [],
+        "task_counter": 1,
+        "assignment_history": []
+    }
+    return save_all_data(data)
+
+def archive_and_reset_data():
+    """Archive current data and reset"""
+    # First, get current data
+    current_data, _ = load_all_data()
+    
+    # Create archive with timestamp
+    archive_data = {
+        "archived_at": datetime.now().isoformat(),
+        "archived_by": st.session_state.current_user,
+        "data": current_data
+    }
+    
+    # Save archive (you could save this to a separate file if needed)
+    archive_filename = f"archive_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+    
+    # For now, we'll just reset the main data
+    return reset_all_data()
+
 def load_tasks():
     """Load tasks from storage"""
     data, _ = load_all_data()
@@ -214,6 +243,8 @@ if 'show_conflict_message' not in st.session_state:
     st.session_state.show_conflict_message = False
 if 'last_conflict_message' not in st.session_state:
     st.session_state.last_conflict_message = None
+if 'show_reset_confirmation' not in st.session_state:
+    st.session_state.show_reset_confirmation = False
 
 # Helper Functions
 def normalize_column_names(df):
@@ -588,35 +619,38 @@ def generate_detailed_report():
             
             <h2>📋 Active Tasks Details</h2>
             <table>
-                <tr><th>Task</th><th>Priority</th><th>Languages</th><th>Assignees</th><th>Created By</th><th>Created</th></tr>
+                <tr><th>Task</th><th>Priority</th><th>Languages</th><th>Assignees</th><th>Count</th><th>Created By</th><th>Created</th></tr>
     """
     
     for task_id, task_info in active_tasks:
         assignees = assignments.get(task_id, [])
+        assignee_count = len(assignees)
         created_date = datetime.fromisoformat(task_info['created_at'].replace('Z', '+00:00')).strftime('%m/%d/%Y') if 'created_at' in task_info else 'N/A'
         tag_class = {'P0 - Critical': 'tag-critical', 'P1 - High': 'tag-high', 'P2 - Medium': 'tag-medium', 'P3 - Low': 'tag-low'}.get(task_info['priority'], '')
-        html += f'<tr><td><strong>{task_info["name"]}</strong></td><td><span class="tag {tag_class}">{task_info["priority"]}</span></td><td>{", ".join(task_info["languages"])}</td><td>{", ".join(assignees)}</td><td>{task_info["created_by"]}</td><td>{created_date}</td></tr>'
+        html += f'<tr><td><strong>{task_info["name"]}</strong></td><td><span class="tag {tag_class}">{task_info["priority"]}</span></td><td>{", ".join(task_info["languages"])}</td><td>{", ".join(assignees[:3])}{"..." if len(assignees) > 3 else ""}</td><td><strong>{assignee_count}</strong></td><td>{task_info["created_by"]}</td><td>{created_date}</td></tr>'
     
     html += """
             </table>
             
             <h2>✅ Recently Completed Tasks</h2>
             <table>
-                <tr><th>Task</th><th>Priority</th><th>Languages</th><th>Completed By</th><th>Completion Time</th><th>Assignees</th></tr>
+                <tr><th>Task</th><th>Priority</th><th>Languages</th><th>Completed By</th><th>Completion Time</th><th>Assignees</th><th>Count</th></tr>
     """
     
     # Show last 10 completed tasks
     for ct in completed_tasks[-10:]:
         completion_date = datetime.fromisoformat(ct['completed_at'].replace('Z', '+00:00')).strftime('%m/%d/%Y %I:%M %p')
         tag_class = {'P0 - Critical': 'tag-critical', 'P1 - High': 'tag-high', 'P2 - Medium': 'tag-medium', 'P3 - Low': 'tag-low'}.get(ct.get('priority', ''), '')
-        assignees = ", ".join(ct.get('assignees', []))
-        html += f'<tr><td><strong>{ct.get("task_name", "Unknown")}</strong></td><td><span class="tag {tag_class}">{ct.get("priority", "Unknown")}</span></td><td>{", ".join(ct.get("languages", []))}</td><td>{ct["completed_by"]}</td><td>{completion_date}</td><td>{assignees}</td></tr>'
+        assignees = ct.get('assignees', [])
+        assignee_count = len(assignees)
+        assignee_display = ", ".join(assignees[:3]) + ("..." if len(assignees) > 3 else "")
+        html += f'<tr><td><strong>{ct.get("task_name", "Unknown")}</strong></td><td><span class="tag {tag_class}">{ct.get("priority", "Unknown")}</span></td><td>{", ".join(ct.get("languages", []))}</td><td>{ct["completed_by"]}</td><td>{completion_date}</td><td>{assignee_display}</td><td><strong>{assignee_count}</strong></td></tr>'
     
     html += f"""
             </table>
         </div>
         <div class="footer">
-            <p>Task Assignment Tool v4.1 | Comprehensive Analytics Report | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p>Task Assignment Tool v4.2 | Comprehensive Analytics Report | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
         </div>
     </div>
     </body>
@@ -630,7 +664,7 @@ def dismiss_conflict_message():
     st.session_state.show_conflict_message = False
     st.session_state.last_conflict_message = None
 
-# Add custom CSS for persistent user
+# Add custom CSS for persistent user and data
 st.markdown("""
 <script>
     // Save user to localStorage
@@ -646,7 +680,7 @@ st.markdown("""
         if (savedUser) {
             const newUrl = window.location.pathname + '?user=' + encodeURIComponent(savedUser);
             window.history.replaceState({}, '', newUrl);
-            window.location.reload();
+            // Don't reload, just update the URL
         }
     }
 </script>
@@ -749,18 +783,31 @@ if st.session_state.current_user:
                     st.metric("Total Tasks", len(tasks))
                     st.metric("Team Size", len(st.session_state.roster_data))
                 
-                # Current assignments
+                # Current assignments with counts
                 st.divider()
                 st.subheader("👥 Current Assignments")
                 
                 # Get current assignments
                 current_assignments = defaultdict(list)
+                task_assignee_counts = {}
                 for task_id in active_tasks:
                     task_info = tasks[task_id]
-                    for assignee in assignments.get(task_id, []):
+                    assignees = assignments.get(task_id, [])
+                    task_assignee_counts[task_info['name']] = len(assignees)
+                    for assignee in assignees:
                         current_assignments[assignee].append(task_info['name'])
                 
+                # Show tasks with assignee counts
+                if task_assignee_counts:
+                    st.write("**Tasks by Assignee Count:**")
+                    for task_name, count in sorted(task_assignee_counts.items(), key=lambda x: x[1], reverse=True):
+                        st.write(f"• {task_name}: **{count}** assignees")
+                
+                st.divider()
+                
+                # Show individual assignments
                 if current_assignments:
+                    st.write("**Individual Assignments:**")
                     for assignee, task_names in sorted(current_assignments.items()):
                         with st.expander(f"{assignee} ({len(task_names)} tasks)"):
                             for task_name in task_names:
@@ -776,11 +823,12 @@ if st.session_state.current_user:
             except Exception as e:
                 st.error(f"Data loading error: {e}")
         
-        # Reports section
+        # Reports and Data Management section
         if st.session_state.roster_data is not None:
             st.divider()
-            st.subheader("📈 Reports")
+            st.subheader("📈 Reports & Data")
             
+            # Reports
             col1, col2 = st.columns(2)
             with col1:
                 if st.button("📊 Basic Report", use_container_width=True):
@@ -798,6 +846,36 @@ if st.session_state.current_user:
                     mime="text/html",
                     use_container_width=True
                 )
+            
+            # Data Management
+            st.divider()
+            st.subheader("🗄️ Data Management")
+            
+            # Show data reset confirmation
+            if st.session_state.show_reset_confirmation:
+                st.warning("⚠️ **Are you sure you want to reset all data?**")
+                st.info("This will delete all tasks, assignments, and history. This action cannot be undone!")
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("✅ Yes, Reset", type="primary", use_container_width=True):
+                        if archive_and_reset_data():
+                            st.success("✅ All data has been reset!")
+                            st.session_state.show_reset_confirmation = False
+                            st.cache_data.clear()
+                            st.rerun()
+                        else:
+                            st.error("Failed to reset data")
+                with col2:
+                    if st.button("❌ Cancel", use_container_width=True):
+                        st.session_state.show_reset_confirmation = False
+                        st.rerun()
+            else:
+                if st.button("🗑️ Reset All Data", type="secondary", use_container_width=True):
+                    st.session_state.show_reset_confirmation = True
+                    st.rerun()
+                
+                st.caption("Use this to start a new week/period with fresh data")
     
     # Main content
     if st.session_state.roster_data is None:
@@ -935,12 +1013,13 @@ if st.session_state.current_user:
                     active_tasks.sort(key=lambda x: priority_order.get(x[1]['priority'], 4))
                     
                     for task_id, task_info in active_tasks:
-                        with st.expander(f"📌 {task_info['name']} - {task_info['priority']}"):
-                            current = assignments.get(task_id, [])
-                            
+                        current_assignees = assignments.get(task_id, [])
+                        assignee_count = len(current_assignees)
+                        
+                        with st.expander(f"📌 {task_info['name']} - {task_info['priority']} ({assignee_count} assignees)"):
                             st.write(f"**Created by:** {task_info['created_by']}")
                             st.write(f"**Languages:** {', '.join(task_info['languages'])}")
-                            st.write(f"**Assigned:** {', '.join(current) if current else 'None'}")
+                            st.write(f"**Assigned ({assignee_count}):** {', '.join(current_assignees) if current_assignees else 'None'}")
                             
                             col1, col2 = st.columns(2)
                             with col1:
@@ -965,11 +1044,14 @@ if st.session_state.current_user:
                             
                             available = get_available_testers(task_info['languages'], False)
                             new_assignees = st.multiselect(
-                                "Assignees",
+                                f"Assignees (currently {assignee_count})",
                                 [t['name'] for t in available],
-                                default=current,
+                                default=current_assignees,
                                 key=f"assign_{task_id}"
                             )
+                            
+                            if len(new_assignees) != assignee_count:
+                                st.info(f"Change: {assignee_count} → {len(new_assignees)} assignees")
                             
                             col1, col2 = st.columns(2)
                             with col1:
@@ -1043,7 +1125,7 @@ if st.session_state.current_user:
                             with cols[i % 3]:
                                 st.write(f"• {name}")
                 
-                # Active and completed tasks
+                # Active and completed tasks with counts
                 col1, col2 = st.columns(2)
                 
                 with col1:
@@ -1051,15 +1133,17 @@ if st.session_state.current_user:
                     for tid in [t for t in tasks if t not in completed_task_ids]:
                         info = tasks[tid]
                         assignees = assignments.get(tid, [])
+                        assignee_count = len(assignees)
                         st.write(f"**{info['name']}**")
-                        st.caption(f"{info['priority']} | {len(assignees)} assignees | {', '.join(info['languages'])}")
+                        st.caption(f"{info['priority']} | **{assignee_count}** assignees | {', '.join(info['languages'])}")
                         st.divider()
                 
                 with col2:
                     st.subheader("✅ Recently Completed")
                     for ct in completed_tasks[-10:]:
+                        assignee_count = len(ct.get('assignees', []))
                         st.write(f"**{ct.get('task_name', 'Unknown')}**")
-                        st.caption(f"By {ct['completed_by']} | {datetime.fromisoformat(ct['completed_at'].replace('Z', '+00:00')).strftime('%m/%d %I:%M %p')}")
+                        st.caption(f"By {ct['completed_by']} | {assignee_count} assignees | {datetime.fromisoformat(ct['completed_at'].replace('Z', '+00:00')).strftime('%m/%d %I:%M %p')}")
                         st.divider()
         
         except Exception as e:
@@ -1068,4 +1152,4 @@ if st.session_state.current_user:
 
 # Footer
 st.divider()
-st.caption("Team Task Assignment Tool v4.1 | GitHub Storage | Enhanced Analytics")
+st.caption("Team Task Assignment Tool v4.2 | GitHub Storage | Enhanced Analytics | Data Reset Feature")
