@@ -23,5 +23,10 @@
     "user": "John Doe",
     "message": "test\n",
     "timestamp": "09:20 AM"
+  },
+  {
+    "user": "Ana Spin",
+    "message": "test2\n",
+    "timestamp": "09:45 AM"
   }
 ]
