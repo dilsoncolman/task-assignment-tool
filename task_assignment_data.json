@@ -8,6 +8,16 @@
       ],
       "created_at": "2026-02-17T08:42:13.947726",
       "created_by": "John Doe"
+    },
+    "TASK_002": {
+      "name": "T2T2T2",
+      "priority": "P0 - Critical",
+      "languages": [
+        "English",
+        "French"
+      ],
+      "created_at": "2026-02-17T08:45:15.888425",
+      "created_by": "Chris Wiy"
     }
   },
   "assignments": {
@@ -21,7 +31,7 @@
     ]
   },
   "completed_tasks": [],
-  "task_counter": 3,
+  "task_counter": 2,
   "assignment_history": [
     {
       "task_id": "TASK_001",
