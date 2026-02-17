@@ -80,6 +80,9 @@
     ],
     "TASK_007": [
       "Jhon Doe16"
+    ],
+    "TASK_008": [
+      "Jhon Doe16"
     ]
   },
   "completed_tasks": [
@@ -102,7 +105,7 @@
       "created_at": "2026-02-17T10:51:05.878965"
     }
   ],
-  "task_counter": 9,
+  "task_counter": 8,
   "assignment_history": [
     {
       "task_id": "TASK_002",
@@ -823,10 +826,19 @@
       "assigned_by": "Anna Spin",
       "languages": [],
       "priority": "Unknown"
+    },
+    {
+      "task_id": "TASK_008",
+      "task_name": "Unknown",
+      "tester": "Jhon Doe16",
+      "assigned_at": "2026-02-17T14:59:02.408162",
+      "assigned_by": "Anna Spin",
+      "languages": [],
+      "priority": "Unknown"
     }
   ],
   "last_modified": {
     "user": "Anna Spin",
-    "timestamp": "2026-02-17T14:59:00.924749"
+    "timestamp": "2026-02-17T14:59:02.647092"
   }
 }
