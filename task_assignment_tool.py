@@ -512,7 +512,97 @@ def generate_detailed_report():
     for task_info in tasks.values():
         priority_distribution[task_info['priority']] += 1
     
-    # Generate HTML report
+    # Prepare text report content
+    text_report = f"""
+================================================================================
+COMPREHENSIVE TASK ASSIGNMENT REPORT
+================================================================================
+Generated: {now.strftime('%B %d, %Y at %I:%M %p')}
+By: {st.session_state.current_user}
+
+================================================================================
+EXECUTIVE SUMMARY
+================================================================================
+Total Tasks: {total_tasks}
+Active Tasks: {len(active_tasks)}
+Completed Tasks: {len(completed_tasks)}
+Completion Rate: {completion_rate:.1f}%
+
+Key Insights:
+- Average task completion time: {avg_completion_time:.1f} hours
+- Most active tester this week: {max(tester_weekly_count.items(), key=lambda x: x[1])[0] if tester_weekly_count else 'N/A'} ({max(tester_weekly_count.values()) if tester_weekly_count else 0} tasks)
+- Most demanded language: {max(language_demand.items(), key=lambda x: x[1])[0] if language_demand else 'N/A'} ({max(language_demand.values()) if language_demand else 0} tasks)
+
+================================================================================
+RESOURCE UTILIZATION
+================================================================================
+Total Testers: {total_testers}
+Currently Assigned: {len(assigned_testers)}
+Available (Unassigned): {available_testers_count}
+Current Utilization: {utilization_rate:.1f}%
+
+================================================================================
+LANGUAGE DEMAND ANALYSIS
+================================================================================
+"""
+    
+    if language_demand:
+        for lang, count in sorted(language_demand.items(), key=lambda x: x[1], reverse=True):
+            weekly = language_weekly_demand.get(lang, 0)
+            text_report += f"{lang}: {count} total ({weekly} this week)\n"
+    
+    text_report += """
+================================================================================
+PRIORITY DISTRIBUTION
+================================================================================
+"""
+    
+    for priority in ["P0 - Critical", "P1 - High", "P2 - Medium", "P3 - Low"]:
+        total_priority = priority_distribution.get(priority, 0)
+        completed_priority = len([ct for ct in completed_tasks if ct.get('priority') == priority])
+        active_priority = total_priority - completed_priority
+        rate = (completed_priority / total_priority * 100) if total_priority > 0 else 0
+        text_report += f"{priority}: Total={total_priority}, Active={active_priority}, Completed={completed_priority}, Rate={rate:.1f}%\n"
+    
+    text_report += """
+================================================================================
+ACTIVE TASKS DETAILS
+================================================================================
+"""
+    
+    for task_id, task_info in active_tasks:
+        assignees = assignments.get(task_id, [])
+        assignee_count = len(assignees)
+        created_date = datetime.fromisoformat(task_info['created_at'].replace('Z', '+00:00')).strftime('%m/%d/%Y') if 'created_at' in task_info else 'N/A'
+        text_report += f"\nTask: {task_info['name']}\n"
+        text_report += f"  Priority: {task_info['priority']}\n"
+        text_report += f"  Languages: {', '.join(task_info['languages'])}\n"
+        text_report += f"  Created By: {task_info['created_by']} on {created_date}\n"
+        text_report += f"  Assignees ({assignee_count}): {', '.join(assignees)}\n"
+    
+    text_report += """
+================================================================================
+RECENTLY COMPLETED TASKS
+================================================================================
+"""
+    
+    for ct in completed_tasks[-10:]:
+        completion_date = datetime.fromisoformat(ct['completed_at'].replace('Z', '+00:00')).strftime('%m/%d/%Y %I:%M %p')
+        assignees = ct.get('assignees', [])
+        assignee_count = len(assignees)
+        text_report += f"\nTask: {ct.get('task_name', 'Unknown')}\n"
+        text_report += f"  Priority: {ct.get('priority', 'Unknown')}\n"
+        text_report += f"  Languages: {', '.join(ct.get('languages', []))}\n"
+        text_report += f"  Completed By: {ct['completed_by']} on {completion_date}\n"
+        text_report += f"  Assignees ({assignee_count}): {', '.join(assignees)}\n"
+    
+    text_report += """
+================================================================================
+END OF REPORT
+================================================================================
+"""
+    
+    # Generate HTML report with improved styling
     html = f"""
     <!DOCTYPE html>
     <html>
@@ -520,31 +610,173 @@ def generate_detailed_report():
         <title>Comprehensive Task Assignment Report</title>
         <meta charset="UTF-8">
         <style>
-            body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 20px; margin: 0; }}
-            .container {{ max-width: 1400px; margin: 0 auto; background: white; border-radius: 20px; box-shadow: 0 25px 50px rgba(0,0,0,0.2); overflow: hidden; }}
-            .header {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 40px; text-align: center; }}
-            .header h1 {{ font-size: 2.5em; margin: 0 0 10px 0; }}
-            .content {{ padding: 40px; }}
-            h2 {{ color: #667eea; border-bottom: 3px solid #667eea; padding-bottom: 10px; margin-top: 30px; }}
-            h3 {{ color: #764ba2; margin-top: 20px; }}
-            .metrics {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0; }}
-            .metric {{ background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); padding: 25px; border-radius: 15px; text-align: center; }}
-            .metric .value {{ font-size: 2.5em; font-weight: bold; color: #667eea; }}
-            .metric .label {{ color: #666; margin-top: 5px; }}
-            table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
-            th {{ background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px; text-align: left; }}
-            td {{ padding: 12px; border-bottom: 1px solid #eee; }}
-            tr:hover {{ background: #f8f9fa; }}
-            .tag {{ display: inline-block; padding: 4px 12px; border-radius: 15px; font-size: 0.85em; }}
-            .tag-critical {{ background: #dc3545; color: white; }}
-            .tag-high {{ background: #fd7e14; color: white; }}
-            .tag-medium {{ background: #ffc107; color: #333; }}
-            .tag-low {{ background: #28a745; color: white; }}
-            .highlight {{ background: #fff3cd; padding: 15px; border-radius: 10px; margin: 10px 0; }}
-            .chart {{ margin: 20px 0; }}
-            .bar {{ background: #667eea; height: 25px; margin: 5px 0; border-radius: 5px; position: relative; }}
-            .bar-label {{ position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #333; font-weight: bold; }}
-            .footer {{ background: #f8f9fa; padding: 20px; text-align: center; color: #666; }}
+            body {{ 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                min-height: 100vh; 
+                padding: 20px; 
+                margin: 0; 
+            }}
+            .container {{ 
+                max-width: 1400px; 
+                margin: 0 auto; 
+                background: white; 
+                border-radius: 20px; 
+                box-shadow: 0 25px 50px rgba(0,0,0,0.2); 
+                overflow: hidden; 
+            }}
+            .header {{ 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                color: white; 
+                padding: 40px; 
+                text-align: center; 
+            }}
+            .header h1 {{ 
+                font-size: 2.5em; 
+                margin: 0 0 10px 0; 
+            }}
+            .content {{ 
+                padding: 40px; 
+            }}
+            h2 {{ 
+                color: #667eea; 
+                border-bottom: 3px solid #667eea; 
+                padding-bottom: 10px; 
+                margin-top: 30px; 
+            }}
+            h3 {{ 
+                color: #764ba2; 
+                margin-top: 20px; 
+            }}
+            .metrics {{ 
+                display: grid; 
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+                gap: 20px; 
+                margin: 20px 0; 
+            }}
+            .metric {{ 
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); 
+                padding: 25px; 
+                border-radius: 15px; 
+                text-align: center; 
+            }}
+            .metric .value {{ 
+                font-size: 2.5em; 
+                font-weight: bold; 
+                color: #667eea; 
+            }}
+            .metric .label {{ 
+                color: #666; 
+                margin-top: 5px; 
+            }}
+            table {{ 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin: 20px 0; 
+            }}
+            th {{ 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                color: white; 
+                padding: 12px; 
+                text-align: left; 
+            }}
+            td {{ 
+                padding: 12px; 
+                border-bottom: 1px solid #eee; 
+                vertical-align: top;
+            }}
+            tr:hover {{ 
+                background: #f8f9fa; 
+            }}
+            .tag {{ 
+                display: inline-block; 
+                padding: 4px 12px; 
+                border-radius: 15px; 
+                font-size: 0.85em; 
+            }}
+            .tag-critical {{ 
+                background: #dc3545; 
+                color: white; 
+            }}
+            .tag-high {{ 
+                background: #fd7e14; 
+                color: white; 
+            }}
+            .tag-medium {{ 
+                background: #ffc107; 
+                color: #333; 
+            }}
+            .tag-low {{ 
+                background: #28a745; 
+                color: white; 
+            }}
+            .highlight {{ 
+                background: #fff3cd; 
+                padding: 15px; 
+                border-radius: 10px; 
+                margin: 10px 0; 
+            }}
+            .language-chart {{
+                margin: 20px 0;
+                padding: 20px;
+                background: #f8f9fa;
+                border-radius: 10px;
+            }}
+            .language-item {{
+                margin: 15px 0;
+                padding: 15px;
+                background: white;
+                border-radius: 8px;
+                border-left: 4px solid #667eea;
+            }}
+            .language-name {{
+                font-size: 1.1em;
+                font-weight: bold;
+                color: #333;
+                margin-bottom: 8px;
+            }}
+            .language-bar {{
+                background: #e9ecef;
+                height: 30px;
+                border-radius: 5px;
+                position: relative;
+                overflow: hidden;
+            }}
+            .language-bar-fill {{
+                background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: flex-end;
+                padding-right: 10px;
+                color: white;
+                font-weight: bold;
+            }}
+            .assignee-list {{
+                max-width: none;
+                word-wrap: break-word;
+            }}
+            .footer {{ 
+                background: #f8f9fa; 
+                padding: 20px; 
+                text-align: center; 
+                color: #666; 
+            }}
+            .text-report {{
+                background: #f8f9fa;
+                padding: 20px;
+                margin-top: 40px;
+                border-radius: 10px;
+            }}
+            .text-report pre {{
+                background: white;
+                padding: 20px;
+                border-radius: 5px;
+                overflow-x: auto;
+                font-family: 'Courier New', monospace;
+                font-size: 0.9em;
+                line-height: 1.5;
+            }}
         </style>
     </head>
     <body>
@@ -612,23 +844,21 @@ def generate_detailed_report():
             
             <h2>🌐 Language Demand Analysis</h2>
             <h3>Language Requirements (All Time)</h3>
-            <div class="chart">
+            <div class="language-chart">
     """
     
-    # Language demand chart - FIXED FONT COLOR HERE
+    # Improved language demand chart - NO OVERLAPPING
     if language_demand:
         max_demand = max(language_demand.values())
         for lang, count in sorted(language_demand.items(), key=lambda x: x[1], reverse=True):
             width = (count / max_demand * 100) if max_demand > 0 else 0
             weekly = language_weekly_demand.get(lang, 0)
             html += f'''
-                <div style="margin: 10px 0;">
-                    <div style="display: flex; align-items: center;">
-                        <div style="width: 150px; font-weight: bold; color: #333;">{lang}</div>
-                        <div style="flex: 1; position: relative;">
-                            <div class="bar" style="width: {width}%;">
-                                <span class="bar-label" style="color: #333;">{count} total ({weekly} this week)</span>
-                            </div>
+                <div class="language-item">
+                    <div class="language-name">{lang}</div>
+                    <div class="language-bar">
+                        <div class="language-bar-fill" style="width: {width}%;">
+                            {count} total ({weekly} this week)
                         </div>
                     </div>
                 </div>
@@ -658,12 +888,15 @@ def generate_detailed_report():
                 <tr><th>Task</th><th>Priority</th><th>Languages</th><th>Assignees</th><th>Count</th><th>Created By</th><th>Created</th></tr>
     """
     
+    # Show ALL assignees without ellipsis
     for task_id, task_info in active_tasks:
         assignees = assignments.get(task_id, [])
         assignee_count = len(assignees)
         created_date = datetime.fromisoformat(task_info['created_at'].replace('Z', '+00:00')).strftime('%m/%d/%Y') if 'created_at' in task_info else 'N/A'
         tag_class = {'P0 - Critical': 'tag-critical', 'P1 - High': 'tag-high', 'P2 - Medium': 'tag-medium', 'P3 - Low': 'tag-low'}.get(task_info['priority'], '')
-        html += f'<tr><td><strong>{task_info["name"]}</strong></td><td><span class="tag {tag_class}">{task_info["priority"]}</span></td><td>{", ".join(task_info["languages"])}</td><td>{", ".join(assignees[:3])}{"..." if len(assignees) > 3 else ""}</td><td><strong>{assignee_count}</strong></td><td>{task_info["created_by"]}</td><td>{created_date}</td></tr>'
+        # Show ALL assignees
+        assignee_display = ', '.join(assignees) if assignees else 'None'
+        html += f'<tr><td><strong>{task_info["name"]}</strong></td><td><span class="tag {tag_class}">{task_info["priority"]}</span></td><td>{", ".join(task_info["languages"])}</td><td class="assignee-list">{assignee_display}</td><td><strong>{assignee_count}</strong></td><td>{task_info["created_by"]}</td><td>{created_date}</td></tr>'
     
     html += """
             </table>
@@ -673,20 +906,27 @@ def generate_detailed_report():
                 <tr><th>Task</th><th>Priority</th><th>Languages</th><th>Completed By</th><th>Completion Time</th><th>Assignees</th><th>Count</th></tr>
     """
     
-    # Show last 10 completed tasks
+    # Show last 10 completed tasks with ALL assignees
     for ct in completed_tasks[-10:]:
         completion_date = datetime.fromisoformat(ct['completed_at'].replace('Z', '+00:00')).strftime('%m/%d/%Y %I:%M %p')
         tag_class = {'P0 - Critical': 'tag-critical', 'P1 - High': 'tag-high', 'P2 - Medium': 'tag-medium', 'P3 - Low': 'tag-low'}.get(ct.get('priority', ''), '')
         assignees = ct.get('assignees', [])
         assignee_count = len(assignees)
-        assignee_display = ", ".join(assignees[:3]) + ("..." if len(assignees) > 3 else "")
-        html += f'<tr><td><strong>{ct.get("task_name", "Unknown")}</strong></td><td><span class="tag {tag_class}">{ct.get("priority", "Unknown")}</span></td><td>{", ".join(ct.get("languages", []))}</td><td>{ct["completed_by"]}</td><td>{completion_date}</td><td>{assignee_display}</td><td><strong>{assignee_count}</strong></td></tr>'
+        # Show ALL assignees
+        assignee_display = ', '.join(assignees) if assignees else 'None'
+        html += f'<tr><td><strong>{ct.get("task_name", "Unknown")}</strong></td><td><span class="tag {tag_class}">{ct.get("priority", "Unknown")}</span></td><td>{", ".join(ct.get("languages", []))}</td><td>{ct["completed_by"]}</td><td>{completion_date}</td><td class="assignee-list">{assignee_display}</td><td><strong>{assignee_count}</strong></td></tr>'
     
+    # Add text report at the bottom
     html += f"""
             </table>
+            
+            <div class="text-report">
+                <h2>📄 Text Version of Report</h2>
+                <pre>{text_report}</pre>
+            </div>
         </div>
         <div class="footer">
-            <p>Task Assignment Tool v6.2 | Comprehensive Analytics Report | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p>Task Assignment Tool v6.3 | Comprehensive Analytics Report | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
         </div>
     </div>
     </body>
@@ -1313,4 +1553,4 @@ if st.session_state.current_user:
 
 # Footer
 st.divider()
-st.caption("Team Task Assignment Tool v6.2 | GitHub Storage | Multi-User Support")
+st.caption("Team Task Assignment Tool v6.3 | GitHub Storage | Multi-User Support")
