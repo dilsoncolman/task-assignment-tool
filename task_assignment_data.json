@@ -40,12 +40,13 @@
       "created_by": "John Doe"
     },
     "TASK_008": {
-      "name": "t6t6t6",
+      "name": "tttt",
       "priority": "P0 - Critical",
       "languages": [
-        "Finnish"
+        "Spanish",
+        "French"
       ],
-      "created_at": "2026-02-17T15:01:02.133322",
+      "created_at": "2026-02-17T15:16:17.289622",
       "created_by": "John Doe"
     }
   },
@@ -145,7 +146,7 @@
       "created_at": "2026-02-17T11:11:12.830362"
     }
   ],
-  "task_counter": 9,
+  "task_counter": 8,
   "assignment_history": [
     {
       "task_id": "TASK_002",
@@ -901,6 +902,6 @@
   ],
   "last_modified": {
     "user": "John Doe",
-    "timestamp": "2026-02-17T15:16:16.654820"
+    "timestamp": "2026-02-17T15:16:17.824519"
   }
 }
