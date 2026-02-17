@@ -8,6 +8,7 @@ import statistics
 import requests
 from typing import Dict, List, Any
 import os
+import time
 
 # Page config
 st.set_page_config(
@@ -94,6 +95,7 @@ def save_data_to_github(data, sha=None, file_name=DATA_FILE):
         return False
 
 # Chat Functions
+@st.cache_data(ttl=5)  # Cache for 5 seconds for chat refresh
 def load_chat_messages():
     """Load chat messages from GitHub"""
     try:
@@ -276,6 +278,8 @@ if 'show_reset_confirmation' not in st.session_state:
     st.session_state.show_reset_confirmation = False
 if 'chat_input' not in st.session_state:
     st.session_state.chat_input = ""
+if 'last_message_count' not in st.session_state:
+    st.session_state.last_message_count = 0
 
 # Helper Functions
 def normalize_column_names(df):
@@ -681,7 +685,7 @@ def generate_detailed_report():
             </table>
         </div>
         <div class="footer">
-            <p>Task Assignment Tool v4.4 | Comprehensive Analytics Report | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p>Task Assignment Tool v5.0 | Comprehensive Analytics Report | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
         </div>
     </div>
     </body>
@@ -695,8 +699,41 @@ def dismiss_conflict_message():
     st.session_state.show_conflict_message = False
     st.session_state.last_conflict_message = None
 
-# Add custom CSS for persistent user and data
+# Add custom CSS for persistent user and chat styling
 st.markdown("""
+<style>
+/* Chat styling */
+.chat-container {
+    height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    margin-bottom: 10px;
+}
+.chat-message {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.chat-user {
+    font-weight: bold;
+    color: #667eea;
+}
+.chat-time {
+    font-size: 0.8em;
+    color: #999;
+}
+.chat-text {
+    margin-top: 4px;
+}
+/* Make the chat input look better */
+.stTextArea textarea {
+    font-size: 14px;
+}
+</style>
 <script>
     // Save user to localStorage
     const urlParams = new URLSearchParams(window.location.search);
@@ -711,9 +748,19 @@ st.markdown("""
         if (savedUser) {
             const newUrl = window.location.pathname + '?user=' + encodeURIComponent(savedUser);
             window.history.replaceState({}, '', newUrl);
-            // Don't reload, just update the URL
         }
     }
+    
+    // Auto-scroll chat to bottom
+    function scrollChatToBottom() {
+        const chatContainer = document.querySelector('.chat-container');
+        if (chatContainer) {
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    }
+    
+    // Call on load
+    setTimeout(scrollChatToBottom, 100);
 </script>
 """, unsafe_allow_html=True)
 
@@ -743,491 +790,520 @@ if st.session_state.current_user is None:
         st.query_params['user'] = user_name
         st.rerun()
 else:
-    col1, col2 = st.columns([6, 1])
-    with col1:
-        st.caption(f"👤 Current User: {st.session_state.current_user}")
-    with col2:
-        if st.button("Switch User"):
-            st.session_state.current_user = None
-            st.query_params.clear()
+    # Create main layout with chat on the right
+    col_main, col_chat = st.columns([3, 1])
+    
+    with col_main:
+        col1, col2 = st.columns([6, 1])
+        with col1:
+            st.caption(f"👤 Current User: {st.session_state.current_user}")
+        with col2:
+            if st.button("Switch User"):
+                st.session_state.current_user = None
+                st.query_params.clear()
+                st.rerun()
+    
+    # Chat Panel (Right Side)
+    with col_chat:
+        st.subheader("💬 Team Chat")
+        
+        # Chat messages container
+        messages, _ = load_chat_messages()
+        
+        # Auto-refresh chat every 5 seconds
+        chat_placeholder = st.empty()
+        
+        with chat_placeholder.container():
+            chat_html = '<div class="chat-container">'
+            
+            if messages:
+                for msg in messages[-20:]:  # Show last 20 messages
+                    if msg.get('user') and msg.get('message'):
+                        chat_html += f'''
+                        <div class="chat-message">
+                            <div class="chat-user">{msg['user']} <span class="chat-time">{msg.get('timestamp', '')}</span></div>
+                            <div class="chat-text">{msg['message']}</div>
+                        </div>
+                        '''
+            else:
+                chat_html += '<div style="text-align: center; color: #999; padding: 20px;">No messages yet. Start a conversation!</div>'
+            
+            chat_html += '</div>'
+            st.markdown(chat_html, unsafe_allow_html=True)
+        
+        # Chat input with Enter key support
+        with st.form(key='chat_form', clear_on_submit=True):
+            chat_message = st.text_area("Type a message...", 
+                                      height=80, 
+                                      key="chat_input_area",
+                                      placeholder="Type and press Enter to send...")
+            
+            col1, col2 = st.columns([3, 1])
+            with col1:
+                submit = st.form_submit_button("📤 Send", use_container_width=True)
+            with col2:
+                refresh = st.form_submit_button("🔄", use_container_width=True)
+            
+            if submit and chat_message:
+                new_message = {
+                    "user": st.session_state.current_user,
+                    "message": chat_message,
+                    "timestamp": datetime.now().strftime("%I:%M %p")
+                }
+                if save_chat_message(new_message):
+                    st.rerun()
+            
+            if refresh:
+                st.rerun()
+        
+        # Auto-refresh mechanism
+        if len(messages) != st.session_state.last_message_count:
+            st.session_state.last_message_count = len(messages)
+            time.sleep(0.1)
             st.rerun()
 
 # Main interface
 if st.session_state.current_user:
-    # Conflict message
-    if st.session_state.last_conflict_message and st.session_state.show_conflict_message:
-        with st.container():
-            col1, col2 = st.columns([10, 1])
-            with col1:
-                st.warning("⚠️ **Assignment Conflicts:**")
-                for conflict in st.session_state.last_conflict_message['conflicts']:
-                    st.write(f"  • {conflict}")
-            with col2:
-                if st.button("✖"):
-                    dismiss_conflict_message()
-                    st.rerun()
-    
-    # Sidebar
-    with st.sidebar:
-        st.header("📊 Team Roster")
-        st.info("💡 Export from Numbers as CSV (.csv) for best results")
+    with col_main:
+        # Conflict message
+        if st.session_state.last_conflict_message and st.session_state.show_conflict_message:
+            with st.container():
+                col1, col2 = st.columns([10, 1])
+                with col1:
+                    st.warning("⚠️ **Assignment Conflicts:**")
+                    for conflict in st.session_state.last_conflict_message['conflicts']:
+                        st.write(f"  • {conflict}")
+                with col2:
+                    if st.button("✖"):
+                        dismiss_conflict_message()
+                        st.rerun()
         
-        uploaded_file = st.file_uploader("Upload roster", type=['xlsx', 'csv'])
-        
-        if uploaded_file:
-            try:
-                if uploaded_file.name.endswith('.csv'):
-                    df = pd.read_csv(uploaded_file)
-                else:
-                    df = pd.read_excel(uploaded_file, engine='openpyxl')
+        # Sidebar
+        with st.sidebar:
+            st.header("📊 Team Roster")
+            st.info("💡 Export from Numbers as CSV (.csv) for best results")
+            
+            uploaded_file = st.file_uploader("Upload roster", type=['xlsx', 'csv'])
+            
+            if uploaded_file:
+                try:
+                    if uploaded_file.name.endswith('.csv'):
+                        df = pd.read_csv(uploaded_file)
+                    else:
+                        df = pd.read_excel(uploaded_file, engine='openpyxl')
+                    
+                    df = normalize_column_names(df)
+                    missing = validate_required_columns(df)
+                    
+                    if missing:
+                        st.error(f"Missing: {', '.join(missing)}")
+                    else:
+                        df = df[(df['first_name'].notna()) & (df['first_name'] != '') &
+                               (df['last_name'].notna()) & (df['last_name'] != '')]
+                        st.session_state.roster_data = df
+                        st.success(f"✅ Loaded {len(df)} members")
+                except Exception as e:
+                    st.error(f"Error: {e}")
+            
+            # Live task summary
+            if st.session_state.roster_data is not None:
+                try:
+                    tasks = load_tasks()
+                    assignments = load_assignments()
+                    completed = load_completed_tasks()
+                    completed_ids = [c['task_id'] for c in completed]
+                    active_task_ids = [t for t in tasks if t not in completed_ids]
+                    
+                    st.divider()
+                    st.subheader("📊 Live Dashboard")
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.metric("Active Tasks", len(active_task_ids))
+                        st.metric("Completed Today", len([c for c in completed if datetime.fromisoformat(c['completed_at'].replace('Z', '+00:00')).date() == datetime.now().date()]))
+                    with col2:
+                        st.metric("Total Tasks", len(tasks))
+                        st.metric("Team Size", len(st.session_state.roster_data))
+                    
+                    # Active Tasks List
+                    st.divider()
+                    st.subheader("📋 Active Tasks")
+                    
+                    if active_task_ids:
+                        # Sort tasks by priority
+                        priority_order = {"P0 - Critical": 0, "P1 - High": 1, "P2 - Medium": 2, "P3 - Low": 3}
+                        sorted_tasks = sorted(active_task_ids, 
+                                            key=lambda tid: priority_order.get(tasks[tid]['priority'], 4))
+                        
+                        for task_id in sorted_tasks:
+                            task_info = tasks[task_id]
+                            assignees = assignments.get(task_id, [])
+                            assignee_count = len(assignees)
+                            
+                            # Priority color coding
+                            priority_colors = {
+                                "P0 - Critical": "🔴",
+                                "P1 - High": "🟠",
+                                "P2 - Medium": "🟡",
+                                "P3 - Low": "🟢"
+                            }
+                            priority_icon = priority_colors.get(task_info['priority'], "⚪")
+                            
+                            with st.expander(f"{priority_icon} {task_info['name']} ({assignee_count} assignees)"):
+                                st.write(f"**Priority:** {task_info['priority']}")
+                                st.write(f"**Languages:** {', '.join(task_info['languages'])}")
+                                st.write(f"**Created by:** {task_info['created_by']}")
+                                st.write(f"**Assignee Count:** {assignee_count}")
+                                
+                                if assignees:
+                                    st.write("**Assigned to:**")
+                                    for assignee in sorted(assignees):
+                                        st.write(f"  • {assignee}")
+                                else:
+                                    st.write("**No assignees yet**")
+                    else:
+                        st.info("No active tasks")
+                    
+                    st.divider()
+                    if st.button("🔄 Refresh", use_container_width=True):
+                        st.cache_data.clear()
+                        st.rerun()
+                        
+                except Exception as e:
+                    st.error(f"Data loading error: {e}")
+            
+            # Reports and Data Management section
+            if st.session_state.roster_data is not None:
+                st.divider()
+                st.subheader("📈 Reports")
                 
-                df = normalize_column_names(df)
-                missing = validate_required_columns(df)
+                # Reports
+                if st.button("📊 Generate Report", type="primary", use_container_width=True):
+                    report = generate_detailed_report()
+                    st.download_button(
+                        "📥 Download Report",
+                        data=report,
+                        file_name=f"detailed_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
+                        mime="text/html",
+                        use_container_width=True
+                    )
                 
-                if missing:
-                    st.error(f"Missing: {', '.join(missing)}")
+                # Data Management - More visible
+                st.divider()
+                st.subheader("🗄️ Data Management")
+                
+                # Show data reset confirmation
+                if st.session_state.show_reset_confirmation:
+                    st.error("⚠️ **WARNING: Reset All Data?**")
+                    st.warning("This will permanently delete:")
+                    st.write("• All tasks")
+                    st.write("• All assignments")
+                    st.write("• All history")
+                    st.write("• All completed tasks")
+                    st.write("• All chat messages")
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("✅ Yes, Reset Everything", type="primary", use_container_width=True):
+                            if archive_and_reset_data():
+                                # Also clear chat
+                                save_data_to_github([], None, CHAT_FILE)
+                                st.success("✅ All data has been reset!")
+                                st.session_state.show_reset_confirmation = False
+                                st.cache_data.clear()
+                                st.rerun()
+                            else:
+                                st.error("Failed to reset data")
+                    with col2:
+                        if st.button("❌ Cancel", use_container_width=True):
+                            st.session_state.show_reset_confirmation = False
+                            st.rerun()
                 else:
-                    df = df[(df['first_name'].notna()) & (df['first_name'] != '') &
-                           (df['last_name'].notna()) & (df['last_name'] != '')]
-                    st.session_state.roster_data = df
-                    st.success(f"✅ Loaded {len(df)} members")
-            except Exception as e:
-                st.error(f"Error: {e}")
+                    # Make the reset button more prominent
+                    st.warning("⚠️ **Start Fresh**")
+                    st.caption("Use this to reset all data and start a new week/period")
+                    if st.button("🗑️ RESET ALL DATA", type="secondary", use_container_width=True, 
+                               help="Delete all tasks and start fresh"):
+                        st.session_state.show_reset_confirmation = True
+                        st.rerun()
         
-        # Live task summary
-        if st.session_state.roster_data is not None:
+        # Main content
+        if st.session_state.roster_data is None:
+            st.info("👈 Upload the team roster to start")
+        else:
             try:
                 tasks = load_tasks()
                 assignments = load_assignments()
-                completed = load_completed_tasks()
-                completed_ids = [c['task_id'] for c in completed]
-                active_task_ids = [t for t in tasks if t not in completed_ids]
+                completed_tasks = load_completed_tasks()
+                completed_task_ids = [ct['task_id'] for ct in completed_tasks]
                 
-                st.divider()
-                st.subheader("📊 Live Dashboard")
+                tab1, tab2, tab3 = st.tabs(["📝 Create Task", "👥 Manage", "✅ Status"])
                 
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.metric("Active Tasks", len(active_task_ids))
-                    st.metric("Completed Today", len([c for c in completed if datetime.fromisoformat(c['completed_at'].replace('Z', '+00:00')).date() == datetime.now().date()]))
-                with col2:
-                    st.metric("Total Tasks", len(tasks))
-                    st.metric("Team Size", len(st.session_state.roster_data))
-                
-                # Active Tasks List
-                st.divider()
-                st.subheader("📋 Active Tasks")
-                
-                if active_task_ids:
-                    # Sort tasks by priority
-                    priority_order = {"P0 - Critical": 0, "P1 - High": 1, "P2 - Medium": 2, "P3 - Low": 3}
-                    sorted_tasks = sorted(active_task_ids, 
-                                        key=lambda tid: priority_order.get(tasks[tid]['priority'], 4))
+                # Tab 1: Create Task
+                with tab1:
+                    st.header("Create New Task")
                     
-                    for task_id in sorted_tasks:
-                        task_info = tasks[task_id]
-                        assignees = assignments.get(task_id, [])
-                        assignee_count = len(assignees)
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        task_name = st.text_input("Task Name", placeholder="e.g., Siri Validation")
+                        priority = st.selectbox("Priority", ["P0 - Critical", "P1 - High", "P2 - Medium", "P3 - Low"])
+                    
+                    with col2:
+                        all_languages = set()
+                        for _, row in st.session_state.roster_data.iterrows():
+                            all_languages.update(get_tester_languages(row))
+                        all_languages = {l for l in all_languages if l}
                         
-                        # Priority color coding
-                        priority_colors = {
-                            "P0 - Critical": "🔴",
-                            "P1 - High": "🟠",
-                            "P2 - Medium": "🟡",
-                            "P3 - Low": "🟢"
-                        }
-                        priority_icon = priority_colors.get(task_info['priority'], "⚪")
+                        language_requirements = st.multiselect("Languages", sorted(all_languages))
+                        match_all = st.checkbox("Require ALL languages", value=False)
+                    
+                    if task_name and language_requirements:
+                        st.subheader("📋 Available Testers")
                         
-                        with st.expander(f"{priority_icon} {task_info['name']} ({assignee_count} assignees)"):
-                            st.write(f"**Priority:** {task_info['priority']}")
-                            st.write(f"**Languages:** {', '.join(task_info['languages'])}")
-                            st.write(f"**Created by:** {task_info['created_by']}")
-                            st.write(f"**Assignee Count:** {assignee_count}")
+                        available_testers = get_available_testers(language_requirements, match_all)
+                        
+                        if available_testers:
+                            fully_available = [t for t in available_testers if t['is_available']]
+                            if fully_available:
+                                st.success(f"✨ {len(fully_available)} fully available")
                             
-                            if assignees:
-                                st.write("**Assigned to:**")
-                                for assignee in sorted(assignees):
-                                    st.write(f"  • {assignee}")
-                            else:
-                                st.write("**No assignees yet**")
-                else:
-                    st.info("No active tasks")
-                
-                st.divider()
-                if st.button("🔄 Refresh", use_container_width=True):
-                    st.cache_data.clear()
-                    st.rerun()
-                    
-            except Exception as e:
-                st.error(f"Data loading error: {e}")
-        
-        # Reports and Data Management section
-        if st.session_state.roster_data is not None:
-            st.divider()
-            st.subheader("📈 Reports")
-            
-            # Reports
-            if st.button("📊 Generate Report", type="primary", use_container_width=True):
-                report = generate_detailed_report()
-                st.download_button(
-                    "📥 Download Report",
-                    data=report,
-                    file_name=f"detailed_report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.html",
-                    mime="text/html",
-                    use_container_width=True
-                )
-            
-            # Chat Feature - NEW!
-            st.divider()
-            st.subheader("💬 Team Chat")
-            
-            # Display chat messages
-            messages, _ = load_chat_messages()
-            chat_container = st.container()
-            
-            with chat_container:
-                # Show last 10 messages
-                if messages:
-                    for msg in messages[-10:]:
-                        if msg.get('user') and msg.get('message'):
-                            st.caption(f"**{msg['user']}** - {msg.get('timestamp', '')}")
-                            st.write(msg['message'])
-                            st.divider()
-                else:
-                    st.info("No messages yet. Start a conversation!")
-            
-            # Chat input
-            chat_input = st.text_area("💬 Send a message to other team leads:", 
-                                 key="chat_input_widget",
-                                 height=80,
-                                 placeholder="Type your message here...")
-            
-            if st.button("📤 Send", use_container_width=True):
-                if st.session_state.chat_input_widget:
-                    new_message = {
-                        "user": st.session_state.current_user,
-                        "message": st.session_state.chat_input_widget,
-                        "timestamp": datetime.now().strftime("%Y-%m-%d %I:%M %p")
-                    }
-                    if save_chat_message(new_message):
-                        st.success("Message sent!")
-                        st.cache_data.clear()
-                        st.rerun()
-                else:
-                    st.warning("Please type a message first")
-            
-            # Data Management - More visible
-            st.divider()
-            st.subheader("🗄️ Data Management")
-            
-            # Show data reset confirmation
-            if st.session_state.show_reset_confirmation:
-                st.error("⚠️ **WARNING: Reset All Data?**")
-                st.warning("This will permanently delete:")
-                st.write("• All tasks")
-                st.write("• All assignments")
-                st.write("• All history")
-                st.write("• All completed tasks")
-                st.write("• All chat messages")
-                
-                col1, col2 = st.columns(2)
-                with col1:
-                    if st.button("✅ Yes, Reset Everything", type="primary", use_container_width=True):
-                        if archive_and_reset_data():
-                            # Also clear chat
-                            save_data_to_github([], None, CHAT_FILE)
-                            st.success("✅ All data has been reset!")
-                            st.session_state.show_reset_confirmation = False
-                            st.cache_data.clear()
-                            st.rerun()
-                        else:
-                            st.error("Failed to reset data")
-                with col2:
-                    if st.button("❌ Cancel", use_container_width=True):
-                        st.session_state.show_reset_confirmation = False
-                        st.rerun()
-            else:
-                # Make the reset button more prominent
-                st.warning("⚠️ **Start Fresh**")
-                st.caption("Use this to reset all data and start a new week/period")
-                if st.button("🗑️ RESET ALL DATA", type="secondary", use_container_width=True, 
-                           help="Delete all tasks and start fresh"):
-                    st.session_state.show_reset_confirmation = True
-                    st.rerun()
-    
-    # Main content
-    if st.session_state.roster_data is None:
-        st.info("👈 Upload the team roster to start")
-    else:
-        try:
-            tasks = load_tasks()
-            assignments = load_assignments()
-            completed_tasks = load_completed_tasks()
-            completed_task_ids = [ct['task_id'] for ct in completed_tasks]
-            
-            tab1, tab2, tab3 = st.tabs(["📝 Create Task", "👥 Manage", "✅ Status"])
-            
-            # Tab 1: Create Task
-            with tab1:
-                st.header("Create New Task")
-                
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    task_name = st.text_input("Task Name", placeholder="e.g., Siri Validation")
-                    priority = st.selectbox("Priority", ["P0 - Critical", "P1 - High", "P2 - Medium", "P3 - Low"])
-                
-                with col2:
-                    all_languages = set()
-                    for _, row in st.session_state.roster_data.iterrows():
-                        all_languages.update(get_tester_languages(row))
-                    all_languages = {l for l in all_languages if l}
-                    
-                    language_requirements = st.multiselect("Languages", sorted(all_languages))
-                    match_all = st.checkbox("Require ALL languages", value=False)
-                
-                if task_name and language_requirements:
-                    st.subheader("📋 Available Testers")
-                    
-                    available_testers = get_available_testers(language_requirements, match_all)
-                    
-                    if available_testers:
-                        fully_available = [t for t in available_testers if t['is_available']]
-                        if fully_available:
-                            st.success(f"✨ {len(fully_available)} fully available")
-                        
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            if st.button("✅ Select Available", use_container_width=True):
-                                for i, t in enumerate(available_testers):
-                                    st.session_state[f"check_{i}"] = t['is_available']
-                                st.rerun()
-                        with col2:
-                            if st.button("☑️ Select All", use_container_width=True):
-                                for i in range(len(available_testers)):
-                                    st.session_state[f"check_{i}"] = True
-                                st.rerun()
-                        with col3:
-                            if st.button("❌ Clear", use_container_width=True):
-                                for i in range(len(available_testers)):
-                                    st.session_state[f"check_{i}"] = False
-                                st.rerun()
-                        
-                        st.divider()
-                        
-                        selected_testers = []
-                        for i, tester in enumerate(available_testers):
-                            col1, col2, col3, col4 = st.columns([3, 1, 2, 3])
-                            
+                            col1, col2, col3 = st.columns(3)
                             with col1:
-                                key = f"check_{i}"
-                                if key not in st.session_state:
-                                    st.session_state[key] = tester['is_available']
-                                if st.checkbox(tester['name'], key=key):
-                                    selected_testers.append(tester['name'])
-                            
+                                if st.button("✅ Select Available", use_container_width=True):
+                                    for i, t in enumerate(available_testers):
+                                        st.session_state[f"check_{i}"] = t['is_available']
+                                    st.rerun()
                             with col2:
-                                st.write("🟢" if tester['is_available'] else "🔴")
-                            
-                            with col3:
-                                st.write(", ".join(tester['matching_languages']))
-                            
-                            with col4:
-                                if tester['assigned_tasks']:
-                                    st.write(", ".join([f"{n} ({p})" for n, p in tester['assigned_tasks']]))
-                                else:
-                                    st.write("-")
-                        
-                        st.metric("Selected", len(selected_testers))
-                        
-                        if st.button("🚀 Create Task", type="primary", use_container_width=True):
-                            if selected_testers:
-                                existing = [t['name'] for t in tasks.values()]
-                                if task_name in existing:
-                                    st.error("Task name exists!")
-                                else:
-                                    task_id = f"TASK_{get_task_counter():03d}"
-                                    
-                                    task_info = {
-                                        'name': task_name,
-                                        'priority': priority,
-                                        'languages': language_requirements,
-                                        'created_at': datetime.now().isoformat(),
-                                        'created_by': st.session_state.current_user
-                                    }
-                                    
-                                    save_task(task_id, task_info)
-                                    save_assignments(task_id, selected_testers)
-                                    
-                                    conflicts = []
-                                    for name in selected_testers:
-                                        tester = next((t for t in available_testers if t['name'] == name), None)
-                                        if tester and not tester['is_available']:
-                                            conflicts.append(f"{name} already assigned")
-                                    
-                                    if conflicts:
-                                        st.session_state.last_conflict_message = {'task_name': task_name, 'priority': priority, 'conflicts': conflicts}
-                                        st.session_state.show_conflict_message = True
-                                    
+                                if st.button("☑️ Select All", use_container_width=True):
                                     for i in range(len(available_testers)):
-                                        if f"check_{i}" in st.session_state:
-                                            del st.session_state[f"check_{i}"]
-                                    
-                                    st.success("✅ Task created!")
+                                        st.session_state[f"check_{i}"] = True
                                     st.rerun()
-                            else:
-                                st.error("Select at least one tester")
-                    else:
-                        st.warning("No testers match criteria")
-            
-            # Tab 2: Manage
-            with tab2:
-                st.header("Manage Assignments")
-                
-                active_tasks = [(tid, tinfo) for tid, tinfo in tasks.items() if tid not in completed_task_ids]
-                
-                if active_tasks:
-                    priority_order = {"P0 - Critical": 0, "P1 - High": 1, "P2 - Medium": 2, "P3 - Low": 3}
-                    active_tasks.sort(key=lambda x: priority_order.get(x[1]['priority'], 4))
-                    
-                    for task_id, task_info in active_tasks:
-                        current_assignees = assignments.get(task_id, [])
-                        assignee_count = len(current_assignees)
-                        
-                        with st.expander(f"📌 {task_info['name']} - {task_info['priority']} ({assignee_count} assignees)"):
-                            st.write(f"**Created by:** {task_info['created_by']}")
-                            st.write(f"**Languages:** {', '.join(task_info['languages'])}")
-                            st.write(f"**Assigned ({assignee_count}):** {', '.join(current_assignees) if current_assignees else 'None'}")
-                            
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                new_priority = st.selectbox(
-                                    "Priority",
-                                    ["P0 - Critical", "P1 - High", "P2 - Medium", "P3 - Low"],
-                                    index=["P0 - Critical", "P1 - High", "P2 - Medium", "P3 - Low"].index(task_info['priority']),
-                                    key=f"pri_{task_id}"
-                                )
-                                if new_priority != task_info['priority']:
-                                    if st.button("Update", key=f"upd_{task_id}"):
-                                        task_info['priority'] = new_priority
-                                        save_task(task_id, task_info)
-                                        st.rerun()
-                            
-                            with col2:
-                                if st.button("✅ Complete", key=f"comp_{task_id}", type="primary"):
-                                    mark_task_completed(task_id, st.session_state.current_user)
+                            with col3:
+                                if st.button("❌ Clear", use_container_width=True):
+                                    for i in range(len(available_testers)):
+                                        st.session_state[f"check_{i}"] = False
                                     st.rerun()
                             
                             st.divider()
                             
-                            available = get_available_testers(task_info['languages'], False)
-                            new_assignees = st.multiselect(
-                                f"Assignees (currently {assignee_count})",
-                                [t['name'] for t in available],
-                                default=current_assignees,
-                                key=f"assign_{task_id}"
-                            )
+                            selected_testers = []
+                            for i, tester in enumerate(available_testers):
+                                col1, col2, col3, col4 = st.columns([3, 1, 2, 3])
+                                
+                                with col1:
+                                    key = f"check_{i}"
+                                    if key not in st.session_state:
+                                        st.session_state[key] = tester['is_available']
+                                    if st.checkbox(tester['name'], key=key):
+                                        selected_testers.append(tester['name'])
+                                
+                                with col2:
+                                    st.write("🟢" if tester['is_available'] else "🔴")
+                                
+                                with col3:
+                                    st.write(", ".join(tester['matching_languages']))
+                                
+                                with col4:
+                                    if tester['assigned_tasks']:
+                                        st.write(", ".join([f"{n} ({p})" for n, p in tester['assigned_tasks']]))
+                                    else:
+                                        st.write("-")
                             
-                            if len(new_assignees) != assignee_count:
-                                st.info(f"Change: {assignee_count} → {len(new_assignees)} assignees")
+                            st.metric("Selected", len(selected_testers))
                             
-                            col1, col2 = st.columns(2)
-                            with col1:
-                                if st.button("💾 Save", key=f"save_{task_id}"):
-                                    save_assignments(task_id, new_assignees)
-                                    st.rerun()
-                            with col2:
-                                if st.button("🗑️ Delete", key=f"del_{task_id}"):
-                                    delete_task(task_id)
-                                    st.rerun()
-                else:
-                    st.info("No active tasks")
+                            if st.button("🚀 Create Task", type="primary", use_container_width=True):
+                                if selected_testers:
+                                    existing = [t['name'] for t in tasks.values()]
+                                    if task_name in existing:
+                                        st.error("Task name exists!")
+                                    else:
+                                        task_id = f"TASK_{get_task_counter():03d}"
+                                        
+                                        task_info = {
+                                            'name': task_name,
+                                            'priority': priority,
+                                            'languages': language_requirements,
+                                            'created_at': datetime.now().isoformat(),
+                                            'created_by': st.session_state.current_user
+                                        }
+                                        
+                                        save_task(task_id, task_info)
+                                        save_assignments(task_id, selected_testers)
+                                        
+                                        conflicts = []
+                                        for name in selected_testers:
+                                            tester = next((t for t in available_testers if t['name'] == name), None)
+                                            if tester and not tester['is_available']:
+                                                conflicts.append(f"{name} already assigned")
+                                        
+                                        if conflicts:
+                                            st.session_state.last_conflict_message = {'task_name': task_name, 'priority': priority, 'conflicts': conflicts}
+                                            st.session_state.show_conflict_message = True
+                                        
+                                        for i in range(len(available_testers)):
+                                            if f"check_{i}" in st.session_state:
+                                                del st.session_state[f"check_{i}"]
+                                        
+                                        st.success("✅ Task created!")
+                                        st.rerun()
+                                else:
+                                    st.error("Select at least one tester")
+                        else:
+                            st.warning("No testers match criteria")
+                
+                # Tab 2: Manage
+                with tab2:
+                    st.header("Manage Assignments")
+                    
+                    active_tasks = [(tid, tinfo) for tid, tinfo in tasks.items() if tid not in completed_task_ids]
+                    
+                    if active_tasks:
+                        priority_order = {"P0 - Critical": 0, "P1 - High": 1, "P2 - Medium": 2, "P3 - Low": 3}
+                        active_tasks.sort(key=lambda x: priority_order.get(x[1]['priority'], 4))
+                        
+                        for task_id, task_info in active_tasks:
+                            current_assignees = assignments.get(task_id, [])
+                            assignee_count = len(current_assignees)
+                            
+                            with st.expander(f"📌 {task_info['name']} - {task_info['priority']} ({assignee_count} assignees)"):
+                                st.write(f"**Created by:** {task_info['created_by']}")
+                                st.write(f"**Languages:** {', '.join(task_info['languages'])}")
+                                st.write(f"**Assigned ({assignee_count}):** {', '.join(current_assignees) if current_assignees else 'None'}")
+                                
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    new_priority = st.selectbox(
+                                        "Priority",
+                                        ["P0 - Critical", "P1 - High", "P2 - Medium", "P3 - Low"],
+                                        index=["P0 - Critical", "P1 - High", "P2 - Medium", "P3 - Low"].index(task_info['priority']),
+                                        key=f"pri_{task_id}"
+                                    )
+                                    if new_priority != task_info['priority']:
+                                        if st.button("Update", key=f"upd_{task_id}"):
+                                            task_info['priority'] = new_priority
+                                            save_task(task_id, task_info)
+                                            st.rerun()
+                                
+                                with col2:
+                                    if st.button("✅ Complete", key=f"comp_{task_id}", type="primary"):
+                                        mark_task_completed(task_id, st.session_state.current_user)
+                                        st.rerun()
+                                
+                                st.divider()
+                                
+                                available = get_available_testers(task_info['languages'], False)
+                                new_assignees = st.multiselect(
+                                    f"Assignees (currently {assignee_count})",
+                                    [t['name'] for t in available],
+                                    default=current_assignees,
+                                    key=f"assign_{task_id}"
+                                )
+                                
+                                if len(new_assignees) != assignee_count:
+                                    st.info(f"Change: {assignee_count} → {len(new_assignees)} assignees")
+                                
+                                col1, col2 = st.columns(2)
+                                with col1:
+                                    if st.button("💾 Save", key=f"save_{task_id}"):
+                                        save_assignments(task_id, new_assignees)
+                                        st.rerun()
+                                with col2:
+                                    if st.button("🗑️ Delete", key=f"del_{task_id}"):
+                                        delete_task(task_id)
+                                        st.rerun()
+                    else:
+                        st.info("No active tasks")
+                
+                # Tab 3: Status
+                with tab3:
+                    st.header("Task Status Overview")
+                    
+                    # Summary metrics
+                    col1, col2, col3, col4 = st.columns(4)
+                    with col1:
+                        st.metric("Active", len([t for t in tasks if t not in completed_task_ids]))
+                    with col2:
+                        st.metric("Completed", len(completed_tasks))
+                    with col3:
+                        st.metric("Total", len(tasks))
+                    with col4:
+                        st.metric("Team Size", len(st.session_state.roster_data))
+                    
+                    st.divider()
+                    
+                    # Analytics section
+                    st.subheader("📊 Quick Analytics")
+                    
+                    # Language demand this week
+                    assignment_history = load_assignment_history()
+                    week_ago = datetime.now() - timedelta(days=7)
+                    language_weekly_demand = defaultdict(int)
+                    
+                    for record in assignment_history:
+                        assigned_date = datetime.fromisoformat(record['assigned_at'].replace('Z', '+00:00'))
+                        if assigned_date >= week_ago:
+                            for lang in record.get('languages', []):
+                                language_weekly_demand[lang] += 1
+                    
+                    if language_weekly_demand:
+                        st.write("**Most Demanded Languages This Week:**")
+                        for lang, count in sorted(language_weekly_demand.items(), key=lambda x: x[1], reverse=True)[:5]:
+                            st.write(f"• {lang}: {count} tasks")
+                    
+                    st.divider()
+                    
+                    # Unassigned testers
+                    all_testers = set()
+                    assigned = set()
+                    
+                    for _, row in st.session_state.roster_data.iterrows():
+                        name = f"{row['first_name']} {row['last_name']}".strip()
+                        if name:
+                            all_testers.add(name)
+                    
+                    for task_id, assignees in assignments.items():
+                        if task_id not in completed_task_ids:
+                            assigned.update(assignees)
+                    
+                    unassigned = all_testers - assigned
+                    
+                    if unassigned:
+                        with st.expander(f"⚠️ Unassigned Testers ({len(unassigned)})"):
+                            cols = st.columns(3)
+                            for i, name in enumerate(sorted(unassigned)):
+                                with cols[i % 3]:
+                                    st.write(f"• {name}")
+                    
+                    # Active and completed tasks with counts
+                    col1, col2 = st.columns(2)
+                    
+                    with col1:
+                        st.subheader("🔴 Active Tasks")
+                        for tid in [t for t in tasks if t not in completed_task_ids]:
+                            info = tasks[tid]
+                            assignees = assignments.get(tid, [])
+                            assignee_count = len(assignees)
+                            st.write(f"**{info['name']}**")
+                            st.caption(f"{info['priority']} | **{assignee_count}** assignees | {', '.join(info['languages'])}")
+                            st.divider()
+                    
+                    with col2:
+                        st.subheader("✅ Recently Completed")
+                        for ct in completed_tasks[-10:]:
+                            assignee_count = len(ct.get('assignees', []))
+                            st.write(f"**{ct.get('task_name', 'Unknown')}**")
+                            st.caption(f"By {ct['completed_by']} | {assignee_count} assignees | {datetime.fromisoformat(ct['completed_at'].replace('Z', '+00:00')).strftime('%m/%d %I:%M %p')}")
+                            st.divider()
             
-            # Tab 3: Status
-            with tab3:
-                st.header("Task Status Overview")
-                
-                # Summary metrics
-                col1, col2, col3, col4 = st.columns(4)
-                with col1:
-                    st.metric("Active", len([t for t in tasks if t not in completed_task_ids]))
-                with col2:
-                    st.metric("Completed", len(completed_tasks))
-                with col3:
-                    st.metric("Total", len(tasks))
-                with col4:
-                    st.metric("Team Size", len(st.session_state.roster_data))
-                
-                st.divider()
-                
-                # Analytics section
-                st.subheader("📊 Quick Analytics")
-                
-                # Language demand this week
-                assignment_history = load_assignment_history()
-                week_ago = datetime.now() - timedelta(days=7)
-                language_weekly_demand = defaultdict(int)
-                
-                for record in assignment_history:
-                    assigned_date = datetime.fromisoformat(record['assigned_at'].replace('Z', '+00:00'))
-                    if assigned_date >= week_ago:
-                        for lang in record.get('languages', []):
-                            language_weekly_demand[lang] += 1
-                
-                if language_weekly_demand:
-                    st.write("**Most Demanded Languages This Week:**")
-                    for lang, count in sorted(language_weekly_demand.items(), key=lambda x: x[1], reverse=True)[:5]:
-                        st.write(f"• {lang}: {count} tasks")
-                
-                st.divider()
-                
-                # Unassigned testers
-                all_testers = set()
-                assigned = set()
-                
-                for _, row in st.session_state.roster_data.iterrows():
-                    name = f"{row['first_name']} {row['last_name']}".strip()
-                    if name:
-                        all_testers.add(name)
-                
-                for task_id, assignees in assignments.items():
-                    if task_id not in completed_task_ids:
-                        assigned.update(assignees)
-                
-                unassigned = all_testers - assigned
-                
-                if unassigned:
-                    with st.expander(f"⚠️ Unassigned Testers ({len(unassigned)})"):
-                        cols = st.columns(3)
-                        for i, name in enumerate(sorted(unassigned)):
-                            with cols[i % 3]:
-                                st.write(f"• {name}")
-                
-                # Active and completed tasks with counts
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    st.subheader("🔴 Active Tasks")
-                    for tid in [t for t in tasks if t not in completed_task_ids]:
-                        info = tasks[tid]
-                        assignees = assignments.get(tid, [])
-                        assignee_count = len(assignees)
-                        st.write(f"**{info['name']}**")
-                        st.caption(f"{info['priority']} | **{assignee_count}** assignees | {', '.join(info['languages'])}")
-                        st.divider()
-                
-                with col2:
-                    st.subheader("✅ Recently Completed")
-                    for ct in completed_tasks[-10:]:
-                        assignee_count = len(ct.get('assignees', []))
-                        st.write(f"**{ct.get('task_name', 'Unknown')}**")
-                        st.caption(f"By {ct['completed_by']} | {assignee_count} assignees | {datetime.fromisoformat(ct['completed_at'].replace('Z', '+00:00')).strftime('%m/%d %I:%M %p')}")
-                        st.divider()
-        
-        except Exception as e:
-            st.error(f"Data error: {e}")
-            st.info("Click 'Refresh' in the sidebar to retry")
+            except Exception as e:
+                st.error(f"Data error: {e}")
+                st.info("Click 'Refresh' in the sidebar to retry")
 
 # Footer
 st.divider()
-st.caption("Team Task Assignment Tool v4.4 | GitHub Storage | Team Chat | Data Reset Feature")
+st.caption("Team Task Assignment Tool v5.0 | GitHub Storage | Team Chat | Enhanced UI")
+
+# Auto-refresh for chat
+time.sleep(5)
+st.rerun()
