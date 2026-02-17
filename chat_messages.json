@@ -18,5 +18,10 @@
     "user": "John Doe",
     "message": "what\n",
     "timestamp": "09:18 AM"
+  },
+  {
+    "user": "John Doe",
+    "message": "test\n",
+    "timestamp": "09:20 AM"
   }
 ]
