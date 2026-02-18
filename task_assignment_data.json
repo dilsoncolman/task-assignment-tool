@@ -80,7 +80,52 @@
       "Jhon Doe15"
     ]
   },
-  "completed_tasks": [],
+  "completed_tasks": [
+    {
+      "task_id": "TASK_003",
+      "task_name": "t1t1t1",
+      "completed_by": "Alan Spin",
+      "completed_at": "2026-02-18T13:41:27.419620",
+      "assignees": [
+        "Jhon Doe13",
+        "Jhon Doe15",
+        "Jhon Doe18",
+        "Jhon Doe25",
+        "Jhon Doe9",
+        "Jhon Doe1",
+        "Jhon Doe14",
+        "Jhon Doe16",
+        "Jhon Doe17",
+        "Jhon Doe19",
+        "Jhon Doe2",
+        "Jhon Doe20",
+        "Jhon Doe21",
+        "Jhon Doe22",
+        "Jhon Doe23",
+        "Jhon Doe24",
+        "Jhon Doe26",
+        "Jhon Doe28",
+        "Jhon Doe29",
+        "Jhon Doe3",
+        "Jhon Doe30",
+        "Jhon Doe31",
+        "Jhon Doe32",
+        "Jhon Doe34",
+        "Jhon Doe35",
+        "Jhon Doe4",
+        "Jhon Doe5",
+        "Jhon Doe6",
+        "Jhon Doe8"
+      ],
+      "languages": [
+        "English",
+        "French"
+      ],
+      "priority": "P1 - High",
+      "created_by": "John Doe",
+      "created_at": "2026-02-18T13:36:27.662787"
+    }
+  ],
   "task_counter": 6,
   "assignment_history": [
     {
@@ -2236,7 +2281,7 @@
     }
   ],
   "last_modified": {
-    "user": "John Doe",
-    "timestamp": "2026-02-18T13:40:31.306586"
+    "user": "Alan Spin",
+    "timestamp": "2026-02-18T13:41:27.909028"
   }
 }
