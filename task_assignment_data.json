@@ -1,88 +1,11 @@
 {
-  "tasks": {
-    "TASK_001": {
-      "name": "bbbbb",
-      "priority": "P0 - Critical",
-      "languages": [
-        "Danish",
-        "Finnish",
-        "Dutch",
-        "Chinese"
-      ],
-      "created_at": "2026-02-19T11:50:06.140076",
-      "created_by": "LuckB 23B85"
-    }
-  },
-  "assignments": {
-    "TASK_001": [
-      "Angela Brauer",
-      "Berry Pieroen",
-      "Frederik Fagerlund",
-      "Milla-Eerika J\u00e4rvinen"
-    ]
-  },
+  "tasks": {},
+  "assignments": {},
   "completed_tasks": [],
-  "task_counter": 2,
-  "assignment_history": [
-    {
-      "task_id": "TASK_001",
-      "task_name": "bbbbb",
-      "tester": "Angela Brauer",
-      "assigned_at": "2026-02-19T11:50:09.211604",
-      "assigned_by": "LuckB 23B85",
-      "languages": [
-        "Danish",
-        "Finnish",
-        "Dutch",
-        "Chinese"
-      ],
-      "priority": "P0 - Critical"
-    },
-    {
-      "task_id": "TASK_001",
-      "task_name": "bbbbb",
-      "tester": "Berry Pieroen",
-      "assigned_at": "2026-02-19T11:50:09.211646",
-      "assigned_by": "LuckB 23B85",
-      "languages": [
-        "Danish",
-        "Finnish",
-        "Dutch",
-        "Chinese"
-      ],
-      "priority": "P0 - Critical"
-    },
-    {
-      "task_id": "TASK_001",
-      "task_name": "bbbbb",
-      "tester": "Frederik Fagerlund",
-      "assigned_at": "2026-02-19T11:50:09.211657",
-      "assigned_by": "LuckB 23B85",
-      "languages": [
-        "Danish",
-        "Finnish",
-        "Dutch",
-        "Chinese"
-      ],
-      "priority": "P0 - Critical"
-    },
-    {
-      "task_id": "TASK_001",
-      "task_name": "bbbbb",
-      "tester": "Milla-Eerika J\u00e4rvinen",
-      "assigned_at": "2026-02-19T11:50:09.211663",
-      "assigned_by": "LuckB 23B85",
-      "languages": [
-        "Danish",
-        "Finnish",
-        "Dutch",
-        "Chinese"
-      ],
-      "priority": "P0 - Critical"
-    }
-  ],
+  "task_counter": 1,
+  "assignment_history": [],
   "last_modified": {
     "user": "LuckB 23B85",
-    "timestamp": "2026-02-19T11:50:09.428875"
+    "timestamp": "2026-02-19T11:51:30.377747"
   }
 }
