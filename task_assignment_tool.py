@@ -341,8 +341,27 @@ if 'show_reset_confirmation' not in st.session_state:
     st.session_state.show_reset_confirmation = False
 
 # Helper Functions
+def make_columns_unique(columns):
+    """Make duplicate column names unique by adding suffixes"""
+    seen = {}
+    unique_columns = []
+    
+    for col in columns:
+        col_str = str(col).strip()
+        
+        if col_str in seen:
+            # This is a duplicate
+            seen[col_str] += 1
+            unique_columns.append(f"{col_str}_{seen[col_str]}")
+        else:
+            # First occurrence
+            seen[col_str] = 1
+            unique_columns.append(col_str)
+    
+    return unique_columns
+
 def parse_csv_ultra_smart(file_content):
-    """Ultra-smart CSV parser that handles various edge cases"""
+    """Ultra-smart CSV parser that handles various edge cases including duplicate columns"""
     try:
         # Reset file pointer
         file_content.seek(0)
@@ -351,6 +370,7 @@ def parse_csv_ultra_smart(file_content):
         raw_content = file_content.read()
         
         # Try to decode with different encodings
+        text_content = None
         for encoding in ['utf-8', 'latin-1', 'cp1252', 'iso-8859-1']:
             try:
                 if isinstance(raw_content, bytes):
@@ -360,6 +380,9 @@ def parse_csv_ultra_smart(file_content):
                 break
             except:
                 continue
+        
+        if not text_content:
+            raise ValueError("Could not decode file with any encoding")
         
         # Split into lines
         lines = text_content.strip().split('\n')
@@ -376,7 +399,7 @@ def parse_csv_ultra_smart(file_content):
             # Check for common header patterns
             header_patterns = [
                 'first', 'last', 'name', 'language', 'lang', 'device', 
-                'serial', 'type', 'index', 'experience', 'currently'
+                'serial', 'type', 'index', 'experience', 'currently', 'used'
             ]
             
             # Check if values contain header-like words
@@ -442,11 +465,12 @@ def parse_csv_ultra_smart(file_content):
             header_row_idx = 1
         
         # Extract headers and data
-        headers = all_data[header_row_idx]
-        data_rows = all_data[header_row_idx + 1:]
+        headers = all_data[header_row_idx] if header_row_idx < len(all_data) else all_data[0]
+        data_rows = all_data[header_row_idx + 1:] if header_row_idx + 1 < len(all_data) else []
         
-        # Clean headers
+        # Clean headers and make them unique
         headers = [str(h).strip() for h in headers]
+        headers = make_columns_unique(headers)  # Make duplicate columns unique
         
         # Ensure all rows have same number of columns
         max_cols = len(headers)
@@ -475,19 +499,16 @@ def parse_csv_ultra_smart(file_content):
         # If all else fails, try pandas with different options
         try:
             file_content.seek(0)
-            # Try reading with pandas, skipping initial rows if needed
-            for skip_rows in [0, 1, 2]:
-                try:
-                    file_content.seek(0)
-                    df = pd.read_csv(file_content, skiprows=skip_rows)
-                    if len(df.columns) > 1 and not df.empty:
-                        return df
-                except:
-                    continue
-        except:
-            pass
-        
-        raise Exception(f"Failed to parse CSV: {str(e)}")
+            # Try reading with pandas, handling duplicate columns
+            df = pd.read_csv(file_content)
+            
+            # Make columns unique if there are duplicates
+            if df.columns.duplicated().any():
+                df.columns = make_columns_unique(df.columns.tolist())
+            
+            return df
+        except Exception as pandas_error:
+            raise Exception(f"Failed to parse CSV: {str(e)}. Pandas error: {str(pandas_error)}")
 
 def normalize_column_names(df):
     """Normalize column names with extensive mapping"""
@@ -503,7 +524,7 @@ def normalize_column_names(df):
     ):
         df = df.iloc[:, 1:]
     
-    # Create comprehensive mapping
+    # Create comprehensive mapping - now handles numbered versions
     column_mappings = {
         'first_name': [
             'first_name', 'firstname', 'first name', 'fname', 'given_name', 
@@ -535,16 +556,55 @@ def normalize_column_names(df):
             'public_device_name', 'device_name', 'device name', 'device', 
             'public device name', 'device_id', 'device id'
         ],
+        'public_device_name_2': [
+            'public_device_name_2', 'public_device_name_2', 'device_name_2', 
+            'device name 2', 'device 2', 'public device name 2'
+        ],
+        'public_device_name_3': [
+            'public_device_name_3', 'public_device_name_3', 'device_name_3', 
+            'device name 3', 'device 3', 'public device name 3'
+        ],
+        'public_device_name_4': [
+            'public_device_name_4', 'public_device_name_4', 'device_name_4', 
+            'device name 4', 'device 4', 'public device name 4'
+        ],
         'device_type': [
             'device_type', 'type', 'device type', 'device_model', 'model'
+        ],
+        'device_type_2': [
+            'device_type_2', 'type_2', 'device type 2', 'device_model_2', 'model 2'
+        ],
+        'device_type_3': [
+            'device_type_3', 'type_3', 'device type 3', 'device_model_3', 'model 3'
+        ],
+        'device_type_4': [
+            'device_type_4', 'type_4', 'device type 4', 'device_model_4', 'model 4'
         ],
         'serial_number': [
             'serial_number', 'serial', 'sn', 'serial number', 'serial no', 
             'serial_no', 'serialnumber', 'serial#'
         ],
+        'serial_number_2': [
+            'serial_number_2', 'serial_2', 'sn_2', 'serial number 2', 'serial no 2'
+        ],
+        'serial_number_3': [
+            'serial_number_3', 'serial_3', 'sn_3', 'serial number 3', 'serial no 3'
+        ],
+        'serial_number_4': [
+            'serial_number_4', 'serial_4', 'sn_4', 'serial number 4', 'serial no 4'
+        ],
         'currently_used_by': [
             'currently_used_by', 'used_by', 'current_user', 'used by', 
             'currently used by', 'current user', 'assigned_to', 'assigned to'
+        ],
+        'currently_used_by_2': [
+            'currently_used_by_2', 'currently used by_2', 'used_by_2', 'used by 2'
+        ],
+        'currently_used_by_3': [
+            'currently_used_by_3', 'currently used by_3', 'used_by_3', 'used by 3'
+        ],
+        'currently_used_by_4': [
+            'currently_used_by_4', 'currently used by_4', 'used_by_4', 'used by 4'
         ]
     }
     
@@ -561,7 +621,7 @@ def normalize_column_names(df):
         
         # Try exact match first
         for standard_name, variations in column_mappings.items():
-            if standard_name not in used_mappings and col_lower in variations:
+            if col_lower in variations:
                 new_columns[col] = standard_name
                 used_mappings.add(standard_name)
                 mapped = True
@@ -590,9 +650,6 @@ def normalize_column_names(df):
     
     # Remove completely empty columns
     df = df.dropna(axis=1, how='all')
-    
-    # Remove duplicate columns (keep first)
-    df = df.loc[:, ~df.columns.duplicated()]
     
     return df
 
@@ -678,8 +735,10 @@ def get_tester_languages(row):
     return languages
 
 def get_tester_device_info(row):
-    """Get device information for a tester"""
+    """Get device information for a tester - now handles multiple devices"""
     device_info = {}
+    
+    # Check for primary device
     if 'public_device_name' in row.index and pd.notna(row['public_device_name']):
         device_info['device_name'] = str(row['public_device_name'])
     if 'device_type' in row.index and pd.notna(row['device_type']):
@@ -688,6 +747,27 @@ def get_tester_device_info(row):
         device_info['serial_number'] = str(row['serial_number'])
     if 'currently_used_by' in row.index and pd.notna(row['currently_used_by']):
         device_info['currently_used_by'] = str(row['currently_used_by'])
+    
+    # Check for additional devices (2, 3, 4)
+    for i in range(2, 5):
+        device_key = f'device_{i}'
+        if f'public_device_name_{i}' in row.index and pd.notna(row[f'public_device_name_{i}']):
+            if device_key not in device_info:
+                device_info[device_key] = {}
+            device_info[device_key]['device_name'] = str(row[f'public_device_name_{i}'])
+        if f'device_type_{i}' in row.index and pd.notna(row[f'device_type_{i}']):
+            if device_key not in device_info:
+                device_info[device_key] = {}
+            device_info[device_key]['device_type'] = str(row[f'device_type_{i}'])
+        if f'serial_number_{i}' in row.index and pd.notna(row[f'serial_number_{i}']):
+            if device_key not in device_info:
+                device_info[device_key] = {}
+            device_info[device_key]['serial_number'] = str(row[f'serial_number_{i}'])
+        if f'currently_used_by_{i}' in row.index and pd.notna(row[f'currently_used_by_{i}']):
+            if device_key not in device_info:
+                device_info[device_key] = {}
+            device_info[device_key]['currently_used_by'] = str(row[f'currently_used_by_{i}'])
+    
     return device_info
 
 def get_available_testers(language_requirements, match_all=False):
@@ -971,14 +1051,23 @@ TESTER DEVICE INFORMATION
     for tester_name, device_info in sorted(tester_devices.items()):
         if device_info:
             text_report += f"\n{tester_name}:\n"
+            # Primary device
             if device_info.get('device_name'):
-                text_report += f"  Device: {device_info['device_name']}\n"
-            if device_info.get('device_type'):
-                text_report += f"  Type: {device_info['device_type']}\n"
-            if device_info.get('serial_number'):
-                text_report += f"  Serial: {device_info['serial_number']}\n"
-            if device_info.get('currently_used_by'):
-                text_report += f"  Used By: {device_info['currently_used_by']}\n"
+                text_report += f"  Device 1: {device_info['device_name']}"
+                if device_info.get('serial_number'):
+                    text_report += f" (SN: {device_info['serial_number']})"
+                text_report += "\n"
+            
+            # Additional devices
+            for i in range(2, 5):
+                device_key = f'device_{i}'
+                if device_key in device_info:
+                    dev = device_info[device_key]
+                    if dev.get('device_name'):
+                        text_report += f"  Device {i}: {dev['device_name']}"
+                        if dev.get('serial_number'):
+                            text_report += f" (SN: {dev['serial_number']})"
+                        text_report += "\n"
     
     text_report += """
 ================================================================================
@@ -1308,8 +1397,13 @@ END OF REPORT
         if device_info:
             if device_info.get('device_name'):
                 device_str = device_info['device_name']
-            if device_info.get('serial_number'):
-                device_str += f" (SN: {device_info['serial_number']})"
+                if device_info.get('serial_number'):
+                    device_str += f" (SN: {device_info['serial_number']})"
+            # Check for additional devices
+            for i in range(2, 5):
+                device_key = f'device_{i}'
+                if device_key in device_info and device_info[device_key].get('device_name'):
+                    device_str += f", {device_info[device_key]['device_name']}"
         html += f'<tr><td><strong>{tester}</strong></td><td>{weekly}</td><td>{monthly}</td><td>{total}</td><td>{completed}</td><td>{current}</td><td>{device_str if device_str else "-"}</td></tr>'
     
     html += f"""
@@ -1405,7 +1499,7 @@ END OF REPORT
             </div>
         </div>
         <div class="footer">
-            <p>Task Assignment Tool v7.0 | Comprehensive Analytics Report | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p>Task Assignment Tool v7.1 | Comprehensive Analytics Report | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
         </div>
     </div>
     </body>
@@ -1574,6 +1668,7 @@ if st.session_state.current_user:
                     - Make sure your CSV has headers in the first or second row
                     - Column names are case-insensitive
                     - Spaces, underscores, and hyphens are handled automatically
+                    - Duplicate column names are automatically numbered (e.g., currently_used_by_2)
                     """)
                 else:
                     # Filter out empty rows
@@ -1595,6 +1690,7 @@ if st.session_state.current_user:
                 - Make sure the file has column headers
                 - Common delimiters are supported (comma, tab, semicolon)
                 - The tool can handle extra header rows (like A, B, C...)
+                - Duplicate column names are automatically handled
                 - Export from Numbers/Excel as "CSV UTF-8" for best results
                 """)
         
@@ -2199,7 +2295,7 @@ if st.session_state.current_user:
 st.divider()
 col1, col2 = st.columns([3, 1])
 with col1:
-    st.caption("Team Task Assignment Tool v7.0 | GitHub Storage | Multi-User Support")
+    st.caption("Team Task Assignment Tool v7.1 | GitHub Storage | Multi-User Support")
 with col2:
     with st.expander("💡 Tips"):
         st.markdown("""
@@ -2212,4 +2308,5 @@ with col2:
         - Export as CSV UTF-8 from Numbers/Excel
         - Headers should be in first or second row
         - Tool handles various formats automatically
+        - Duplicate column names are automatically numbered
         """)
