@@ -44,6 +44,10 @@
     "TASK_002": [
       "Albaraa Zahran",
       "Angela Brauer"
+    ],
+    "TASK_003": [
+      "Frederik Fagerlund",
+      "Angela Brauer"
     ]
   },
   "completed_tasks": [
@@ -70,7 +74,7 @@
       "created_at": "2026-02-19T16:17:51.721744"
     }
   ],
-  "task_counter": 3,
+  "task_counter": 4,
   "assignment_history": [
     {
       "task_id": "TASK_001",
@@ -255,10 +259,212 @@
         "French"
       ],
       "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "Unknown",
+      "tester": "Antoine Le Naour",
+      "assigned_at": "2026-02-19T16:17:52.970928",
+      "assigned_by": "Dilson1",
+      "languages": [],
+      "priority": "Unknown"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "Unknown",
+      "tester": "Beatrice Baldin",
+      "assigned_at": "2026-02-19T16:17:52.970971",
+      "assigned_by": "Dilson1",
+      "languages": [],
+      "priority": "Unknown"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "Unknown",
+      "tester": "Esther Weber",
+      "assigned_at": "2026-02-19T16:17:52.970987",
+      "assigned_by": "Dilson1",
+      "languages": [],
+      "priority": "Unknown"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "Unknown",
+      "tester": "Giorgio Caiazzo",
+      "assigned_at": "2026-02-19T16:17:52.970997",
+      "assigned_by": "Dilson1",
+      "languages": [],
+      "priority": "Unknown"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "Unknown",
+      "tester": "Joanna Ku\u015bnierek",
+      "assigned_at": "2026-02-19T16:17:52.971008",
+      "assigned_by": "Dilson1",
+      "languages": [],
+      "priority": "Unknown"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "Unknown",
+      "tester": "Louis Guisset",
+      "assigned_at": "2026-02-19T16:17:52.971017",
+      "assigned_by": "Dilson1",
+      "languages": [],
+      "priority": "Unknown"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "Unknown",
+      "tester": "Nicolas Lamiable",
+      "assigned_at": "2026-02-19T16:17:52.971028",
+      "assigned_by": "Dilson1",
+      "languages": [],
+      "priority": "Unknown"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "Unknown",
+      "tester": "Sophie Stark-Foun\u00e9",
+      "assigned_at": "2026-02-19T16:17:52.971038",
+      "assigned_by": "Dilson1",
+      "languages": [],
+      "priority": "Unknown"
+    },
+    {
+      "task_id": "TASK_002",
+      "task_name": "t2t2t2",
+      "tester": "Albaraa Zahran",
+      "assigned_at": "2026-02-19T16:18:22.578456",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "Arabic"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_002",
+      "task_name": "t2t2t2",
+      "tester": "Angela Brauer",
+      "assigned_at": "2026-02-19T16:18:22.578506",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "Arabic"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "t1t1t1",
+      "tester": "Antoine Le Naour",
+      "assigned_at": "2026-02-19T16:19:25.782033",
+      "assigned_by": "Dilson",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "t1t1t1",
+      "tester": "Beatrice Baldin",
+      "assigned_at": "2026-02-19T16:19:25.782064",
+      "assigned_by": "Dilson",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "t1t1t1",
+      "tester": "Esther Weber",
+      "assigned_at": "2026-02-19T16:19:25.782080",
+      "assigned_by": "Dilson",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "t1t1t1",
+      "tester": "Giorgio Caiazzo",
+      "assigned_at": "2026-02-19T16:19:25.782092",
+      "assigned_by": "Dilson",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "t1t1t1",
+      "tester": "Joanna Ku\u015bnierek",
+      "assigned_at": "2026-02-19T16:19:25.782104",
+      "assigned_by": "Dilson",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "t1t1t1",
+      "tester": "Louis Guisset",
+      "assigned_at": "2026-02-19T16:19:25.782115",
+      "assigned_by": "Dilson",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "t1t1t1",
+      "tester": "Nicolas Lamiable",
+      "assigned_at": "2026-02-19T16:19:25.782127",
+      "assigned_by": "Dilson",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "t1t1t1",
+      "tester": "Sophie Stark-Foun\u00e9",
+      "assigned_at": "2026-02-19T16:19:25.782138",
+      "assigned_by": "Dilson",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_003",
+      "task_name": "Unknown",
+      "tester": "Frederik Fagerlund",
+      "assigned_at": "2026-02-19T16:20:37.858539",
+      "assigned_by": "Dilson2",
+      "languages": [],
+      "priority": "Unknown"
+    },
+    {
+      "task_id": "TASK_003",
+      "task_name": "Unknown",
+      "tester": "Angela Brauer",
+      "assigned_at": "2026-02-19T16:20:37.858581",
+      "assigned_by": "Dilson2",
+      "languages": [],
+      "priority": "Unknown"
     }
   ],
   "last_modified": {
     "user": "Dilson2",
-    "timestamp": "2026-02-19T16:20:37.077834"
+    "timestamp": "2026-02-19T16:20:39.100959"
   }
 }
