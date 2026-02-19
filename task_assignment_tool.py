@@ -339,6 +339,10 @@ if 'last_conflict_message' not in st.session_state:
     st.session_state.last_conflict_message = None
 if 'show_reset_confirmation' not in st.session_state:
     st.session_state.show_reset_confirmation = False
+if 'last_uploaded_file_id' not in st.session_state:
+    st.session_state.last_uploaded_file_id = None
+if 'previous_roster_size' not in st.session_state:
+    st.session_state.previous_roster_size = 0
 
 # Helper Functions
 def make_columns_unique(columns):
@@ -363,11 +367,14 @@ def make_columns_unique(columns):
 def parse_csv_ultra_smart(file_content):
     """Ultra-smart CSV parser that handles various edge cases including duplicate columns"""
     try:
-        # Reset file pointer
+        # Always reset file pointer to beginning
         file_content.seek(0)
         
         # Read the raw content
         raw_content = file_content.read()
+        
+        # Reset pointer again
+        file_content.seek(0)
         
         # Try to decode with different encodings
         text_content = None
@@ -1580,7 +1587,7 @@ END OF REPORT
             </div>
         </div>
         <div class="footer">
-            <p>Task Assignment Tool v7.2 | Comprehensive Analytics Report | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p>Task Assignment Tool v7.3 | Comprehensive Analytics Report | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
         </div>
     </div>
     </body>
@@ -1701,23 +1708,52 @@ if st.session_state.current_user:
                     dismiss_conflict_message()
                     st.rerun()
     
-    # Sidebar
+    # Sidebar - UPDATED WITH BETTER FILE HANDLING
     with st.sidebar:
         st.header("📊 Team Roster")
         st.info("💡 Export from Numbers as CSV (.csv) for best results")
         
-        uploaded_file = st.file_uploader("Upload roster", type=['xlsx', 'csv'])
+        # File uploader
+        uploaded_file = st.file_uploader("Upload roster", type=['xlsx', 'csv'], key="roster_upload")
         
         if uploaded_file:
+            # Create file identifier
+            file_id = f"{uploaded_file.name}_{uploaded_file.size}_{uploaded_file.file_id}"
+            
+            # Check if it's a new file
+            is_new_file = st.session_state.last_uploaded_file_id != file_id
+            
+            if is_new_file:
+                st.session_state.last_uploaded_file_id = file_id
+                # Clear old roster data
+                if 'roster_data' in st.session_state:
+                    del st.session_state.roster_data
+                st.info("📁 New file detected, processing...")
+            
+            # Add manual refresh button
+            col1, col2 = st.columns([2, 1])
+            with col2:
+                if st.button("🔄 Refresh", key="refresh_roster"):
+                    st.cache_data.clear()
+                    if 'roster_data' in st.session_state:
+                        del st.session_state.roster_data
+                    st.rerun()
+            
             try:
+                # Always read from the beginning
+                uploaded_file.seek(0)
+                
                 if uploaded_file.name.endswith('.csv'):
                     # Use our ultra-smart CSV parser
                     df = parse_csv_ultra_smart(uploaded_file)
                 else:
+                    uploaded_file.seek(0)  # Reset again for Excel
                     df = pd.read_excel(uploaded_file, engine='openpyxl')
                 
                 # Debug: Show raw columns before normalization
                 with st.expander("🔍 Debug: Column Detection", expanded=False):
+                    st.write("**File:** ", uploaded_file.name)
+                    st.write("**Size:** ", uploaded_file.size, "bytes")
                     st.write("**Raw columns detected:**")
                     st.write(list(df.columns))
                     st.write("**First few rows:**")
@@ -1755,17 +1791,37 @@ if st.session_state.current_user:
                     # Filter out empty rows
                     df = df[(df['first_name'].notna()) & (df['first_name'] != '') &
                            (df['last_name'].notna()) & (df['last_name'] != '')]
-                    st.session_state.roster_data = df
-                    st.success(f"✅ Loaded {len(df)} team members")
+                    
+                    # Force update session state
+                    st.session_state.roster_data = df.copy()  # Use copy to ensure it's a new object
+                    
+                    st.success(f"✅ Loaded {len(df)} team members from {uploaded_file.name}")
+                    
+                    # Show what changed if it's a new file
+                    if is_new_file and 'previous_roster_size' in st.session_state:
+                        diff = len(df) - st.session_state.previous_roster_size
+                        if diff > 0:
+                            st.info(f"📈 Added {diff} team members")
+                        elif diff < 0:
+                            st.info(f"📉 Removed {abs(diff)} team members")
+                    
+                    st.session_state.previous_roster_size = len(df)
                     
                     # Show validation issues if any
                     issues = validate_roster_data(df)
                     if issues:
                         for issue in issues:
                             st.warning(issue)
-                    
+                            
             except Exception as e:
                 st.error(f"Error loading file: {str(e)}")
+                # Clear cache on error
+                if st.button("Clear cache and try again"):
+                    st.cache_data.clear()
+                    if 'roster_data' in st.session_state:
+                        del st.session_state.roster_data
+                    st.rerun()
+                
                 st.info("""
                 **Tips for CSV files:**
                 - Make sure the file has column headers
@@ -2377,7 +2433,7 @@ if st.session_state.current_user:
 st.divider()
 col1, col2 = st.columns([3, 1])
 with col1:
-    st.caption("Team Task Assignment Tool v7.2 | GitHub Storage | Multi-User Support")
+    st.caption("Team Task Assignment Tool v7.3 | GitHub Storage | Multi-User Support")
 with col2:
     with st.expander("💡 Tips"):
         st.markdown("""
