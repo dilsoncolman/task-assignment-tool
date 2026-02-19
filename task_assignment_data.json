@@ -67,6 +67,12 @@
       "Albaraa Zahran",
       "Benjamin Sam",
       "Berk Birol"
+    ],
+    "TASK_004": [
+      "Dilson Cassaro",
+      "Javier G\u00f3mez",
+      "Javier Ignacio Le\u00f3n",
+      "Keith Kaup"
     ]
   },
   "completed_tasks": [],
@@ -1109,10 +1115,58 @@
       "assigned_by": "John Doe",
       "languages": [],
       "priority": "Unknown"
+    },
+    {
+      "task_id": "TASK_004",
+      "task_name": "t4t4t4",
+      "tester": "Dilson Cassaro",
+      "assigned_at": "2026-02-19T09:05:01.818088",
+      "assigned_by": "Alan Spin",
+      "languages": [
+        "Portuguese",
+        "Spanish"
+      ],
+      "priority": "P1 - High"
+    },
+    {
+      "task_id": "TASK_004",
+      "task_name": "t4t4t4",
+      "tester": "Javier G\u00f3mez",
+      "assigned_at": "2026-02-19T09:05:01.818125",
+      "assigned_by": "Alan Spin",
+      "languages": [
+        "Portuguese",
+        "Spanish"
+      ],
+      "priority": "P1 - High"
+    },
+    {
+      "task_id": "TASK_004",
+      "task_name": "t4t4t4",
+      "tester": "Javier Ignacio Le\u00f3n",
+      "assigned_at": "2026-02-19T09:05:01.818133",
+      "assigned_by": "Alan Spin",
+      "languages": [
+        "Portuguese",
+        "Spanish"
+      ],
+      "priority": "P1 - High"
+    },
+    {
+      "task_id": "TASK_004",
+      "task_name": "t4t4t4",
+      "tester": "Keith Kaup",
+      "assigned_at": "2026-02-19T09:05:01.818140",
+      "assigned_by": "Alan Spin",
+      "languages": [
+        "Portuguese",
+        "Spanish"
+      ],
+      "priority": "P1 - High"
     }
   ],
   "last_modified": {
     "user": "Alan Spin",
-    "timestamp": "2026-02-19T09:05:00.961692"
+    "timestamp": "2026-02-19T09:05:01.997717"
   }
 }
