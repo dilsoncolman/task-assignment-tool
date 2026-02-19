@@ -1,11 +1,23 @@
 {
-  "tasks": {},
+  "tasks": {
+    "TASK_001": {
+      "name": "t1t1t1",
+      "priority": "P0 - Critical",
+      "languages": [
+        "Chinese",
+        "Dutch",
+        "Italian"
+      ],
+      "created_at": "2026-02-19T09:00:53.478992",
+      "created_by": "John Doe"
+    }
+  },
   "assignments": {},
   "completed_tasks": [],
   "task_counter": 2,
   "assignment_history": [],
   "last_modified": {
     "user": "John Doe",
-    "timestamp": "2026-02-19T09:00:52.953413"
+    "timestamp": "2026-02-19T09:00:54.822548"
   }
 }
