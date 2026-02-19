@@ -343,6 +343,8 @@ if 'last_uploaded_file_id' not in st.session_state:
     st.session_state.last_uploaded_file_id = None
 if 'previous_roster_size' not in st.session_state:
     st.session_state.previous_roster_size = 0
+if 'file_upload_count' not in st.session_state:
+    st.session_state.file_upload_count = 0
 
 # Helper Functions
 def make_columns_unique(columns):
@@ -1725,9 +1727,14 @@ if st.session_state.current_user:
             
             if is_new_file:
                 st.session_state.last_uploaded_file_id = file_id
+                # Store previous roster size before clearing
+                if st.session_state.roster_data is not None:
+                    st.session_state.previous_roster_size = len(st.session_state.roster_data)
+                else:
+                    st.session_state.previous_roster_size = 0
                 # Clear old roster data
-                if 'roster_data' in st.session_state:
-                    del st.session_state.roster_data
+                st.session_state.roster_data = None
+                st.session_state.file_upload_count += 1
                 st.info("📁 New file detected, processing...")
             
             # Add manual refresh button
@@ -1797,15 +1804,15 @@ if st.session_state.current_user:
                     
                     st.success(f"✅ Loaded {len(df)} team members from {uploaded_file.name}")
                     
-                    # Show what changed if it's a new file
-                    if is_new_file and 'previous_roster_size' in st.session_state:
+                    # Show what changed if it's a new file and not the first upload
+                    if is_new_file and st.session_state.file_upload_count > 1:
                         diff = len(df) - st.session_state.previous_roster_size
                         if diff > 0:
                             st.info(f"📈 Added {diff} team members")
                         elif diff < 0:
                             st.info(f"📉 Removed {abs(diff)} team members")
-                    
-                    st.session_state.previous_roster_size = len(df)
+                        else:
+                            st.info(f"↔️ Same number of team members ({len(df)})")
                     
                     # Show validation issues if any
                     issues = validate_roster_data(df)
@@ -2433,7 +2440,7 @@ if st.session_state.current_user:
 st.divider()
 col1, col2 = st.columns([3, 1])
 with col1:
-    st.caption("Team Task Assignment Tool v7.3 | GitHub Storage | Multi-User Support")
+    st.caption("Team Task Assignment Tool v7.4 | GitHub Storage | Multi-User Support")
 with col2:
     with st.expander("💡 Tips"):
         st.markdown("""
