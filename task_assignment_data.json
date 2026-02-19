@@ -157,10 +157,98 @@
         "Arabic"
       ],
       "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "t1t1t1",
+      "tester": "Antoine Le Naour",
+      "assigned_at": "2026-02-19T16:19:25.782033",
+      "assigned_by": "Dilson",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "t1t1t1",
+      "tester": "Beatrice Baldin",
+      "assigned_at": "2026-02-19T16:19:25.782064",
+      "assigned_by": "Dilson",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "t1t1t1",
+      "tester": "Esther Weber",
+      "assigned_at": "2026-02-19T16:19:25.782080",
+      "assigned_by": "Dilson",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "t1t1t1",
+      "tester": "Giorgio Caiazzo",
+      "assigned_at": "2026-02-19T16:19:25.782092",
+      "assigned_by": "Dilson",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "t1t1t1",
+      "tester": "Joanna Ku\u015bnierek",
+      "assigned_at": "2026-02-19T16:19:25.782104",
+      "assigned_by": "Dilson",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "t1t1t1",
+      "tester": "Louis Guisset",
+      "assigned_at": "2026-02-19T16:19:25.782115",
+      "assigned_by": "Dilson",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "t1t1t1",
+      "tester": "Nicolas Lamiable",
+      "assigned_at": "2026-02-19T16:19:25.782127",
+      "assigned_by": "Dilson",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "t1t1t1",
+      "tester": "Sophie Stark-Foun\u00e9",
+      "assigned_at": "2026-02-19T16:19:25.782138",
+      "assigned_by": "Dilson",
+      "languages": [
+        "French"
+      ],
+      "priority": "P0 - Critical"
     }
   ],
   "last_modified": {
     "user": "Dilson",
-    "timestamp": "2026-02-19T16:19:19.750906"
+    "timestamp": "2026-02-19T16:19:26.017590"
   }
 }
