@@ -1,0 +1,33 @@
+name: Keep App Active
+
+on:
+  schedule:
+    # Runs every 6 hours
+    - cron: '0 */6 * * *'
+  # Allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+    
+    - name: Configure Git
+      run: |
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+    
+    - name: Update keep-alive file
+      run: |
+        echo "Last automatic update: $(date)" > keep-alive.txt
+        echo "This file is automatically updated to keep the app active" >> keep-alive.txt
+        echo "Update count: $GITHUB_RUN_NUMBER" >> keep-alive.txt
+    
+    - name: Commit and push
+      run: |
+        git add keep-alive.txt
+        git diff --staged --quiet || (git commit -m "🤖 Keep app active - $(date)" && git push)
+
