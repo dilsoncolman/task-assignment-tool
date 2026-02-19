@@ -30,6 +30,14 @@
       "Giorgio Caiazzo",
       "Louis Guisset",
       "Marco Manis"
+    ],
+    "TASK_002": [
+      "Antoine Le Naour",
+      "Esther Weber",
+      "Joanna Ku\u015bnierek",
+      "Michael Ziesemann",
+      "Nicolas Lamiable",
+      "Sophie Stark-Foun\u00e9"
     ]
   },
   "completed_tasks": [],
@@ -190,10 +198,82 @@
         "Italian"
       ],
       "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_002",
+      "task_name": "t2t2t2",
+      "tester": "Antoine Le Naour",
+      "assigned_at": "2026-02-19T09:03:29.440463",
+      "assigned_by": "Alan Spin",
+      "languages": [
+        "French",
+        "Japanese"
+      ],
+      "priority": "P1 - High"
+    },
+    {
+      "task_id": "TASK_002",
+      "task_name": "t2t2t2",
+      "tester": "Esther Weber",
+      "assigned_at": "2026-02-19T09:03:29.440510",
+      "assigned_by": "Alan Spin",
+      "languages": [
+        "French",
+        "Japanese"
+      ],
+      "priority": "P1 - High"
+    },
+    {
+      "task_id": "TASK_002",
+      "task_name": "t2t2t2",
+      "tester": "Joanna Ku\u015bnierek",
+      "assigned_at": "2026-02-19T09:03:29.440519",
+      "assigned_by": "Alan Spin",
+      "languages": [
+        "French",
+        "Japanese"
+      ],
+      "priority": "P1 - High"
+    },
+    {
+      "task_id": "TASK_002",
+      "task_name": "t2t2t2",
+      "tester": "Michael Ziesemann",
+      "assigned_at": "2026-02-19T09:03:29.440525",
+      "assigned_by": "Alan Spin",
+      "languages": [
+        "French",
+        "Japanese"
+      ],
+      "priority": "P1 - High"
+    },
+    {
+      "task_id": "TASK_002",
+      "task_name": "t2t2t2",
+      "tester": "Nicolas Lamiable",
+      "assigned_at": "2026-02-19T09:03:29.440531",
+      "assigned_by": "Alan Spin",
+      "languages": [
+        "French",
+        "Japanese"
+      ],
+      "priority": "P1 - High"
+    },
+    {
+      "task_id": "TASK_002",
+      "task_name": "t2t2t2",
+      "tester": "Sophie Stark-Foun\u00e9",
+      "assigned_at": "2026-02-19T09:03:29.440537",
+      "assigned_by": "Alan Spin",
+      "languages": [
+        "French",
+        "Japanese"
+      ],
+      "priority": "P1 - High"
     }
   ],
   "last_modified": {
     "user": "Alan Spin",
-    "timestamp": "2026-02-19T09:03:28.754767"
+    "timestamp": "2026-02-19T09:03:29.632329"
   }
 }
