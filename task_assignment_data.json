@@ -83,6 +83,13 @@
       "Javier G\u00f3mez",
       "Javier Ignacio Le\u00f3n",
       "Keith Kaup"
+    ],
+    "TASK_005": [
+      "Jesper Jonas Petersson",
+      "Marta Checa",
+      "Milla-Eerika J\u00e4rvinen",
+      "Saerah Dewi Suyasa",
+      "Shaun Gouldson"
     ]
   },
   "completed_tasks": [],
@@ -2259,10 +2266,70 @@
         "Spanish"
       ],
       "priority": "P1 - High"
+    },
+    {
+      "task_id": "TASK_005",
+      "task_name": "t5t5t5",
+      "tester": "Jesper Jonas Petersson",
+      "assigned_at": "2026-02-19T09:05:43.481746",
+      "assigned_by": "John Doe",
+      "languages": [
+        "Spanish",
+        "Swedish"
+      ],
+      "priority": "P3 - Low"
+    },
+    {
+      "task_id": "TASK_005",
+      "task_name": "t5t5t5",
+      "tester": "Marta Checa",
+      "assigned_at": "2026-02-19T09:05:43.481791",
+      "assigned_by": "John Doe",
+      "languages": [
+        "Spanish",
+        "Swedish"
+      ],
+      "priority": "P3 - Low"
+    },
+    {
+      "task_id": "TASK_005",
+      "task_name": "t5t5t5",
+      "tester": "Milla-Eerika J\u00e4rvinen",
+      "assigned_at": "2026-02-19T09:05:43.481804",
+      "assigned_by": "John Doe",
+      "languages": [
+        "Spanish",
+        "Swedish"
+      ],
+      "priority": "P3 - Low"
+    },
+    {
+      "task_id": "TASK_005",
+      "task_name": "t5t5t5",
+      "tester": "Saerah Dewi Suyasa",
+      "assigned_at": "2026-02-19T09:05:43.481816",
+      "assigned_by": "John Doe",
+      "languages": [
+        "Spanish",
+        "Swedish"
+      ],
+      "priority": "P3 - Low"
+    },
+    {
+      "task_id": "TASK_005",
+      "task_name": "t5t5t5",
+      "tester": "Shaun Gouldson",
+      "assigned_at": "2026-02-19T09:05:43.481827",
+      "assigned_by": "John Doe",
+      "languages": [
+        "Spanish",
+        "Swedish"
+      ],
+      "priority": "P3 - Low"
     }
   ],
   "last_modified": {
     "user": "John Doe",
-    "timestamp": "2026-02-19T09:05:42.576438"
+    "timestamp": "2026-02-19T09:05:43.744157"
   }
 }
