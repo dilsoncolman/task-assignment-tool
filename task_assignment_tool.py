@@ -343,6 +343,8 @@ if 'last_uploaded_file_id' not in st.session_state:
     st.session_state.last_uploaded_file_id = None
 if 'file_upload_count' not in st.session_state:
     st.session_state.file_upload_count = 0
+if 'last_roster_count' not in st.session_state:
+    st.session_state.last_roster_count = 0
 
 # Helper Functions
 def make_columns_unique(columns):
@@ -1587,7 +1589,7 @@ END OF REPORT
             </div>
         </div>
         <div class="footer">
-            <p>Task Assignment Tool v7.4 | Comprehensive Analytics Report | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
+            <p>Task Assignment Tool v7.6 | Comprehensive Analytics Report | Generated: {now.strftime('%Y-%m-%d %H:%M:%S')}</p>
         </div>
     </div>
     </body>
@@ -1708,7 +1710,7 @@ if st.session_state.current_user:
                     dismiss_conflict_message()
                     st.rerun()
     
-    # Sidebar - UPDATED WITH BETTER FILE HANDLING
+    # Sidebar - UPDATED WITH BETTER FILE HANDLING AND USER LIST
     with st.sidebar:
         st.header("📊 Team Roster")
         st.info("💡 Export from Numbers as CSV (.csv) for best results")
@@ -1790,41 +1792,92 @@ if st.session_state.current_user:
                     df = df[(df['first_name'].notna()) & (df['first_name'] != '') &
                            (df['last_name'].notna()) & (df['last_name'] != '')]
                     
-                    # Get the current count BEFORE updating session state
+                    # Get the current count
                     new_count = len(df)
                     
-                    # Check if we have a previous roster to compare against
-                    if is_new_file and st.session_state.roster_data is not None and st.session_state.file_upload_count > 1:
-                        # Calculate diff using the current roster data before replacing it
-                        old_count = len(st.session_state.roster_data)
-                        diff = new_count - old_count
-                        
-                        # Update session state with new data
-                        st.session_state.roster_data = df.copy()
-                        
-                        # Show success message
-                        st.success(f"✅ Loaded {new_count} team members from {uploaded_file.name}")
-                        
-                        # Show diff message
+                    # Update session state with new data
+                    st.session_state.roster_data = df.copy()
+                    
+                    # Show success message
+                    st.success(f"✅ Loaded {new_count} team members from {uploaded_file.name}")
+                    
+                    # Show what changed if it's a new file and not the first upload
+                    if is_new_file and st.session_state.file_upload_count > 1:
+                        diff = new_count - st.session_state.last_roster_count
                         if diff > 0:
-                            st.info(f"📈 Added {diff} team members")
+                            st.info(f"📈 Added {diff} team members (was {st.session_state.last_roster_count}, now {new_count})")
                         elif diff < 0:
-                            st.info(f"📉 Removed {abs(diff)} team members")
+                            st.info(f"📉 Removed {abs(diff)} team members (was {st.session_state.last_roster_count}, now {new_count})")
                         else:
                             st.info(f"↔️ Same number of team members ({new_count})")
-                    else:
-                        # First upload or not a new file
-                        st.session_state.roster_data = df.copy()
-                        st.success(f"✅ Loaded {new_count} team members from {uploaded_file.name}")
-                        
-                        if is_new_file and st.session_state.file_upload_count == 1:
-                            st.info(f"📊 Initial load: {new_count} team members")
+                    elif is_new_file and st.session_state.file_upload_count == 1:
+                        st.info(f"📊 Initial load: {new_count} team members")
+                    
+                    # Update the last roster count
+                    st.session_state.last_roster_count = new_count
                     
                     # Show validation issues if any
                     issues = validate_roster_data(df)
                     if issues:
                         for issue in issues:
                             st.warning(issue)
+                    
+                    # NEW FEATURE: Show all team members after upload
+                    st.divider()
+                    st.subheader("👥 Uploaded Team Members")
+                    
+                    # Create a summary dataframe for display
+                    display_df = df.copy()
+                    display_df['Full Name'] = display_df['first_name'] + ' ' + display_df['last_name']
+                    
+                    # Collect languages for each person
+                    display_df['Languages'] = display_df.apply(
+                        lambda row: ', '.join(sorted(get_tester_languages(row))), 
+                        axis=1
+                    )
+                    
+                    # Select columns to display
+                    display_columns = ['Full Name', 'Languages']
+                    
+                    # Add device info if available
+                    if 'public_device_name' in df.columns:
+                        display_columns.append('public_device_name')
+                    
+                    # Display the team members
+                    with st.expander(f"📋 View All {new_count} Team Members", expanded=True):
+                        # Add search/filter
+                        search_term = st.text_input("🔍 Search by name or language", key="roster_search")
+                        
+                        if search_term:
+                            # Filter based on search term
+                            mask = (
+                                display_df['Full Name'].str.contains(search_term, case=False, na=False) |
+                                display_df['Languages'].str.contains(search_term, case=False, na=False)
+                            )
+                            filtered_df = display_df[mask]
+                            st.info(f"Found {len(filtered_df)} matches")
+                        else:
+                            filtered_df = display_df
+                        
+                        # Sort by name
+                        filtered_df = filtered_df.sort_values('Full Name')
+                        
+                        # Display the dataframe
+                        st.dataframe(
+                            filtered_df[display_columns],
+                            use_container_width=True,
+                            hide_index=True,
+                            height=min(400, len(filtered_df) * 35 + 50)  # Dynamic height
+                        )
+                        
+                        # Language summary
+                        all_languages = []
+                        for _, row in df.iterrows():
+                            all_languages.extend(get_tester_languages(row))
+                        
+                        if all_languages:
+                            language_counts = Counter(all_languages)
+                            st.caption(f"**Language Distribution:** {', '.join([f'{lang} ({count})' for lang, count in sorted(language_counts.items())])}")
                             
             except Exception as e:
                 st.error(f"Error loading file: {str(e)}")
@@ -2446,7 +2499,7 @@ if st.session_state.current_user:
 st.divider()
 col1, col2 = st.columns([3, 1])
 with col1:
-    st.caption("Team Task Assignment Tool v7.5 | GitHub Storage | Multi-User Support")
+    st.caption("Team Task Assignment Tool v7.6 | GitHub Storage | Multi-User Support")
 with col2:
     with st.expander("💡 Tips"):
         st.markdown("""
