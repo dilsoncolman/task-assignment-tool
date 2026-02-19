@@ -101,6 +101,16 @@
       "Milla-Eerika J\u00e4rvinen",
       "Saerah Dewi Suyasa",
       "Shaun Gouldson"
+    ],
+    "TASK_006": [
+      "Joanna Ku\u015bnierek",
+      "Antoine Le Naour",
+      "Beatrice Baldin",
+      "Giorgio Caiazzo",
+      "Louis Guisset",
+      "Marco Manis",
+      "Nicolas Lamiable",
+      "Sophie Stark-Foun\u00e9"
     ]
   },
   "completed_tasks": [
@@ -2381,10 +2391,114 @@
         "Swedish"
       ],
       "priority": "P3 - Low"
+    },
+    {
+      "task_id": "TASK_006",
+      "task_name": "t6t6t6",
+      "tester": "Joanna Ku\u015bnierek",
+      "assigned_at": "2026-02-19T11:14:17.629389",
+      "assigned_by": "John Doe",
+      "languages": [
+        "Polish",
+        "Spanish",
+        "Swedish"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_006",
+      "task_name": "t6t6t6",
+      "tester": "Antoine Le Naour",
+      "assigned_at": "2026-02-19T11:14:17.629430",
+      "assigned_by": "John Doe",
+      "languages": [
+        "Polish",
+        "Spanish",
+        "Swedish"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_006",
+      "task_name": "t6t6t6",
+      "tester": "Beatrice Baldin",
+      "assigned_at": "2026-02-19T11:14:17.629444",
+      "assigned_by": "John Doe",
+      "languages": [
+        "Polish",
+        "Spanish",
+        "Swedish"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_006",
+      "task_name": "t6t6t6",
+      "tester": "Giorgio Caiazzo",
+      "assigned_at": "2026-02-19T11:14:17.629463",
+      "assigned_by": "John Doe",
+      "languages": [
+        "Polish",
+        "Spanish",
+        "Swedish"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_006",
+      "task_name": "t6t6t6",
+      "tester": "Louis Guisset",
+      "assigned_at": "2026-02-19T11:14:17.629472",
+      "assigned_by": "John Doe",
+      "languages": [
+        "Polish",
+        "Spanish",
+        "Swedish"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_006",
+      "task_name": "t6t6t6",
+      "tester": "Marco Manis",
+      "assigned_at": "2026-02-19T11:14:17.629481",
+      "assigned_by": "John Doe",
+      "languages": [
+        "Polish",
+        "Spanish",
+        "Swedish"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_006",
+      "task_name": "t6t6t6",
+      "tester": "Nicolas Lamiable",
+      "assigned_at": "2026-02-19T11:14:17.629488",
+      "assigned_by": "John Doe",
+      "languages": [
+        "Polish",
+        "Spanish",
+        "Swedish"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_006",
+      "task_name": "t6t6t6",
+      "tester": "Sophie Stark-Foun\u00e9",
+      "assigned_at": "2026-02-19T11:14:17.629496",
+      "assigned_by": "John Doe",
+      "languages": [
+        "Polish",
+        "Spanish",
+        "Swedish"
+      ],
+      "priority": "P0 - Critical"
     }
   ],
   "last_modified": {
     "user": "John Doe",
-    "timestamp": "2026-02-19T11:14:16.587237"
+    "timestamp": "2026-02-19T11:14:17.860815"
   }
 }
