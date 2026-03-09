@@ -17,5 +17,12 @@
     "recovery_hint": "spyke",
     "created_at": "2026-03-09T11:32:22.261307",
     "data_file": "user_dilson3_data.json"
+  },
+  "dilson4": {
+    "password": "d8ada08f296ca5b35bb861d6aecac943f429466142f8afc2827f328488354487",
+    "display_name": "d colman 4 ",
+    "recovery_hint": "spyke",
+    "created_at": "2026-03-09T11:48:21.718967",
+    "data_file": "user_dilson4_data.json"
   }
 }
