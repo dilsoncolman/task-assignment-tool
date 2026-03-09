@@ -25,6 +25,11 @@
       "Benjamin Sam",
       "Keith Kaup",
       "Shaun Gouldson"
+    ],
+    "TASK_002": [
+      "Ainur Kozhabek",
+      "Albaraa Zahran",
+      "Angela Brauer"
     ]
   },
   "completed_tasks": [],
@@ -493,10 +498,43 @@
         "Spanish"
       ],
       "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_002",
+      "task_name": "t6",
+      "tester": "Ainur Kozhabek",
+      "assigned_at": "2026-03-09T08:38:27.377792",
+      "assigned_by": "Dilson",
+      "languages": [
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_002",
+      "task_name": "t6",
+      "tester": "Albaraa Zahran",
+      "assigned_at": "2026-03-09T08:38:27.377831",
+      "assigned_by": "Dilson",
+      "languages": [
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_002",
+      "task_name": "t6",
+      "tester": "Angela Brauer",
+      "assigned_at": "2026-03-09T08:38:27.377842",
+      "assigned_by": "Dilson",
+      "languages": [
+        "English"
+      ],
+      "priority": "P0 - Critical"
     }
   ],
   "last_modified": {
     "user": "Dilson",
-    "timestamp": "2026-03-09T08:38:26.612402"
+    "timestamp": "2026-03-09T08:38:27.542415"
   }
 }
