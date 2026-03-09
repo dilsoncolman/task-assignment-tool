@@ -12,6 +12,7 @@ import time
 import io
 import re
 import hashlib
+import secrets
 
 # Page config
 st.set_page_config(
@@ -27,6 +28,7 @@ GITHUB_BRANCH = st.secrets.get("github", {}).get("branch", "main")
 
 # User Authentication Configuration
 USERS_FILE = "users_auth.json"
+RECOVERY_TOKENS_FILE = "recovery_tokens.json"
 
 # Initialize session state
 if 'authenticated' not in st.session_state:
@@ -107,8 +109,119 @@ def save_users(users_dict):
     except:
         return False
 
-def register_user(username, password, display_name):
-    """Register a new user"""
+def get_recovery_tokens():
+    """Load recovery tokens from GitHub"""
+    if not GITHUB_TOKEN or not GITHUB_REPO:
+        return {}
+    
+    try:
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{RECOVERY_TOKENS_FILE}?ref={GITHUB_BRANCH}"
+        headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+        response = requests.get(url, headers=headers)
+        
+        if response.status_code == 200:
+            content = response.json()
+            import base64
+            tokens = json.loads(base64.b64decode(content['content']).decode('utf-8'))
+            return tokens
+        elif response.status_code == 404:
+            return {}
+    except:
+        return {}
+    
+    return {}
+
+def save_recovery_tokens(tokens_dict):
+    """Save recovery tokens to GitHub"""
+    try:
+        import base64
+        content = base64.b64encode(json.dumps(tokens_dict, indent=2).encode('utf-8')).decode('utf-8')
+        
+        url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{RECOVERY_TOKENS_FILE}?ref={GITHUB_BRANCH}"
+        headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+        response = requests.get(url, headers=headers)
+        
+        sha = None
+        if response.status_code == 200:
+            sha = response.json()['sha']
+        
+        payload = {
+            "message": f"Update recovery tokens - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
+            "content": content,
+            "branch": GITHUB_BRANCH
+        }
+        if sha:
+            payload["sha"] = sha
+        
+        response = requests.put(url, json=payload, headers=headers)
+        return response.status_code in [200, 201]
+    except:
+        return False
+
+def generate_recovery_token(username):
+    """Generate a recovery token for password reset"""
+    token = secrets.token_urlsafe(32)
+    tokens = get_recovery_tokens()
+    
+    # Clean up old tokens (older than 1 hour)
+    current_time = datetime.now()
+    tokens_to_remove = []
+    for user, token_data in tokens.items():
+        if 'created_at' in token_data:
+            created_time = datetime.fromisoformat(token_data['created_at'])
+            if (current_time - created_time).total_seconds() > 3600:  # 1 hour
+                tokens_to_remove.append(user)
+    
+    for user in tokens_to_remove:
+        del tokens[user]
+    
+    # Add new token
+    tokens[username] = {
+        'token': token,
+        'created_at': current_time.isoformat()
+    }
+    
+    if save_recovery_tokens(tokens):
+        return token
+    return None
+
+def verify_recovery_token(username, token):
+    """Verify a recovery token"""
+    tokens = get_recovery_tokens()
+    
+    if username not in tokens:
+        return False
+    
+    token_data = tokens[username]
+    if token_data['token'] != token:
+        return False
+    
+    # Check if token is expired (1 hour)
+    created_time = datetime.fromisoformat(token_data['created_at'])
+    if (datetime.now() - created_time).total_seconds() > 3600:
+        return False
+    
+    return True
+
+def reset_password(username, new_password):
+    """Reset user password"""
+    users = get_users()
+    
+    if username not in users:
+        return False
+    
+    users[username]['password'] = hash_password(new_password)
+    
+    # Remove recovery token
+    tokens = get_recovery_tokens()
+    if username in tokens:
+        del tokens[username]
+        save_recovery_tokens(tokens)
+    
+    return save_users(users)
+
+def register_user(username, password, display_name, recovery_hint):
+    """Register a new user with recovery hint"""
     users = get_users()
     
     if username in users:
@@ -117,6 +230,7 @@ def register_user(username, password, display_name):
     users[username] = {
         "password": hash_password(password),
         "display_name": display_name,
+        "recovery_hint": recovery_hint,  # Store hint for password recovery
         "created_at": datetime.now().isoformat(),
         "data_file": f"user_{username}_data.json"
     }
@@ -1265,7 +1379,7 @@ def show_login():
     """Show login/register screen"""
     st.title("🔐 Team Task Assignment Tool - Login")
     
-    tab1, tab2 = st.tabs(["Login", "Register"])
+    tab1, tab2, tab3 = st.tabs(["Login", "Register", "Forgot Password"])
     
     with tab1:
         st.subheader("Login to Your Account")
@@ -1291,15 +1405,36 @@ def show_login():
     with tab2:
         st.subheader("Create New Account")
         
+        # Username requirements shown upfront
+        st.info("📝 **Username Requirements**: Can only contain lowercase letters, numbers, and underscores (e.g., john_smith123)")
+        
         new_username = st.text_input("Choose Username", key="reg_username", 
-                                   help="Lowercase letters, numbers, and underscores only")
+                                   placeholder="e.g., john_smith123")
+        
+        # Real-time username validation
+        if new_username:
+            if re.match("^[a-z0-9_]+$", new_username):
+                users = get_users()
+                if new_username in users:
+                    st.error("❌ Username already taken")
+                else:
+                    st.success("✅ Username available")
+            else:
+                st.error("❌ Invalid username format. Use only lowercase letters, numbers, and underscores")
+        
         display_name = st.text_input("Display Name", key="reg_display", 
                                    placeholder="e.g., John Smith")
+        
+        # Recovery hint for password recovery
+        recovery_hint = st.text_input("Recovery Hint", key="reg_hint",
+                                    placeholder="e.g., Your pet's name or favorite teacher",
+                                    help="This will help you recover your password if forgotten")
+        
         new_password = st.text_input("Password", type="password", key="reg_password")
         confirm_password = st.text_input("Confirm Password", type="password", key="reg_confirm")
         
         if st.button("📝 Register", type="primary", use_container_width=True):
-            if new_username and display_name and new_password:
+            if new_username and display_name and new_password and recovery_hint:
                 # Validate username
                 if not re.match("^[a-z0-9_]+$", new_username):
                     st.error("Username can only contain lowercase letters, numbers, and underscores")
@@ -1308,7 +1443,7 @@ def show_login():
                 elif len(new_password) < 6:
                     st.error("Password must be at least 6 characters")
                 else:
-                    success, message = register_user(new_username, new_password, display_name)
+                    success, message = register_user(new_username, new_password, display_name, recovery_hint)
                     if success:
                         st.success(message + " - Please login now")
                         time.sleep(2)
@@ -1317,6 +1452,83 @@ def show_login():
                         st.error(message)
             else:
                 st.error("Please fill all fields")
+    
+    with tab3:
+        st.subheader("🔑 Password Recovery")
+        
+        recovery_step = st.session_state.get('recovery_step', 1)
+        
+        if recovery_step == 1:
+            st.info("Enter your username to see your recovery hint")
+            
+            recovery_username = st.text_input("Username", key="recovery_username")
+            
+            if st.button("Get Recovery Hint", type="primary", use_container_width=True):
+                if recovery_username:
+                    users = get_users()
+                    if recovery_username in users:
+                        user_data = users[recovery_username]
+                        recovery_hint = user_data.get('recovery_hint', 'No recovery hint set')
+                        
+                        st.success(f"**Recovery Hint**: {recovery_hint}")
+                        
+                        # Generate recovery token
+                        token = generate_recovery_token(recovery_username)
+                        if token:
+                            st.session_state['recovery_token'] = token
+                            st.session_state['recovery_username'] = recovery_username
+                            st.session_state['recovery_step'] = 2
+                            st.info("Click 'Continue to Reset Password' below")
+                            
+                            if st.button("Continue to Reset Password"):
+                                st.rerun()
+                    else:
+                        st.error("Username not found")
+                else:
+                    st.error("Please enter your username")
+        
+        elif recovery_step == 2:
+            st.success(f"Recovery token generated for user: {st.session_state.get('recovery_username')}")
+            st.info("Enter your new password below")
+            
+            new_password = st.text_input("New Password", type="password", key="reset_password")
+            confirm_password = st.text_input("Confirm New Password", type="password", key="reset_confirm")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                if st.button("Reset Password", type="primary", use_container_width=True):
+                    if new_password and confirm_password:
+                        if new_password != confirm_password:
+                            st.error("Passwords don't match")
+                        elif len(new_password) < 6:
+                            st.error("Password must be at least 6 characters")
+                        else:
+                            # Verify token and reset password
+                            if verify_recovery_token(st.session_state['recovery_username'], 
+                                                   st.session_state['recovery_token']):
+                                if reset_password(st.session_state['recovery_username'], new_password):
+                                    st.success("Password reset successfully! Please login with your new password.")
+                                    st.session_state['recovery_step'] = 1
+                                    del st.session_state['recovery_token']
+                                    del st.session_state['recovery_username']
+                                    time.sleep(2)
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to reset password")
+                            else:
+                                st.error("Recovery token expired or invalid")
+                    else:
+                        st.error("Please enter and confirm your new password")
+            
+            with col2:
+                if st.button("Cancel", use_container_width=True):
+                    st.session_state['recovery_step'] = 1
+                    if 'recovery_token' in st.session_state:
+                        del st.session_state['recovery_token']
+                    if 'recovery_username' in st.session_state:
+                        del st.session_state['recovery_username']
+                    st.rerun()
 
 # Add custom JavaScript for keep-alive
 st.markdown("""
@@ -2157,20 +2369,25 @@ else:
 st.divider()
 col1, col2 = st.columns([3, 1])
 with col1:
-    st.caption("Team Task Assignment Tool v9.0 | Private User Workspaces | Secure Authentication")
+    st.caption("Team Task Assignment Tool v10.0 | Private User Workspaces | Secure Authentication with Password Recovery")
 with col2:
     with st.expander("💡 Tips"):
         st.markdown("""
         **Security Features:**
         - Each user has their own private workspace
         - Passwords are hashed for security
+        - Password recovery with hint system
         - Data is completely isolated between users
+        
+        **Username Requirements:**
+        - Only lowercase letters, numbers, and underscores
+        - Examples: john_smith, user123, test_account
+        
+        **Password Recovery:**
+        - Use the recovery hint you set during registration
+        - Reset tokens expire after 1 hour
         
         **To prevent app from sleeping:**
         - Keep the tab open and active
         - The app auto-pings every minute
-        
-        **CSV Upload Tips:**
-        - Export as CSV UTF-8 from Numbers/Excel
-        - Headers should be in first or second row
         """)
