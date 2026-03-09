@@ -11,12 +11,471 @@
       "created_by": "Dilson"
     }
   },
-  "assignments": {},
+  "assignments": {
+    "TASK_001": [
+      "Jhon Doe29",
+      "Jhon Doe1",
+      "Jhon Doe10",
+      "Jhon Doe11",
+      "Jhon Doe12",
+      "Jhon Doe13",
+      "Jhon Doe14",
+      "Jhon Doe15",
+      "Jhon Doe16",
+      "Jhon Doe17",
+      "Jhon Doe18",
+      "Jhon Doe19",
+      "Jhon Doe2",
+      "Jhon Doe20",
+      "Jhon Doe21",
+      "Jhon Doe22",
+      "Jhon Doe23",
+      "Jhon Doe24",
+      "Jhon Doe25",
+      "Jhon Doe26",
+      "Jhon Doe27",
+      "Jhon Doe28",
+      "Jhon Doe3",
+      "Jhon Doe30",
+      "Jhon Doe31",
+      "Jhon Doe32",
+      "Jhon Doe33",
+      "Jhon Doe34",
+      "Jhon Doe35",
+      "Jhon Doe4",
+      "Jhon Doe5",
+      "Jhon Doe6",
+      "Jhon Doe7",
+      "Jhon Doe8",
+      "Jhon Doe9"
+    ]
+  },
   "completed_tasks": [],
   "task_counter": 1,
-  "assignment_history": [],
+  "assignment_history": [
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe29",
+      "assigned_at": "2026-03-09T08:31:07.404049",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe1",
+      "assigned_at": "2026-03-09T08:31:07.404096",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe10",
+      "assigned_at": "2026-03-09T08:31:07.404108",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe11",
+      "assigned_at": "2026-03-09T08:31:07.404115",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe12",
+      "assigned_at": "2026-03-09T08:31:07.404120",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe13",
+      "assigned_at": "2026-03-09T08:31:07.404125",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe14",
+      "assigned_at": "2026-03-09T08:31:07.404131",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe15",
+      "assigned_at": "2026-03-09T08:31:07.404136",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe16",
+      "assigned_at": "2026-03-09T08:31:07.404142",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe17",
+      "assigned_at": "2026-03-09T08:31:07.404147",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe18",
+      "assigned_at": "2026-03-09T08:31:07.404152",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe19",
+      "assigned_at": "2026-03-09T08:31:07.404157",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe2",
+      "assigned_at": "2026-03-09T08:31:07.404161",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe20",
+      "assigned_at": "2026-03-09T08:31:07.404166",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe21",
+      "assigned_at": "2026-03-09T08:31:07.404171",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe22",
+      "assigned_at": "2026-03-09T08:31:07.404175",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe23",
+      "assigned_at": "2026-03-09T08:31:07.404180",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe24",
+      "assigned_at": "2026-03-09T08:31:07.404185",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe25",
+      "assigned_at": "2026-03-09T08:31:07.404189",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe26",
+      "assigned_at": "2026-03-09T08:31:07.404194",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe27",
+      "assigned_at": "2026-03-09T08:31:07.404199",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe28",
+      "assigned_at": "2026-03-09T08:31:07.404204",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe3",
+      "assigned_at": "2026-03-09T08:31:07.404208",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe30",
+      "assigned_at": "2026-03-09T08:31:07.404213",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe31",
+      "assigned_at": "2026-03-09T08:31:07.404218",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe32",
+      "assigned_at": "2026-03-09T08:31:07.404222",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe33",
+      "assigned_at": "2026-03-09T08:31:07.404227",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe34",
+      "assigned_at": "2026-03-09T08:31:07.404233",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe35",
+      "assigned_at": "2026-03-09T08:31:07.404243",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe4",
+      "assigned_at": "2026-03-09T08:31:07.404252",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe5",
+      "assigned_at": "2026-03-09T08:31:07.404260",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe6",
+      "assigned_at": "2026-03-09T08:31:07.404278",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe7",
+      "assigned_at": "2026-03-09T08:31:07.404289",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe8",
+      "assigned_at": "2026-03-09T08:31:07.404299",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "11111",
+      "tester": "Jhon Doe9",
+      "assigned_at": "2026-03-09T08:31:07.404308",
+      "assigned_by": "Dilson",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "priority": "P0 - Critical"
+    }
+  ],
   "last_modified": {
     "user": "Dilson",
-    "timestamp": "2026-03-09T08:31:06.795581"
+    "timestamp": "2026-03-09T08:31:07.549582"
   }
 }
