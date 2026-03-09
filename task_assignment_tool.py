@@ -51,6 +51,12 @@ if 'file_upload_count' not in st.session_state:
     st.session_state.file_upload_count = 0
 if 'last_roster_count' not in st.session_state:
     st.session_state.last_roster_count = 0
+if 'recovery_step' not in st.session_state:
+    st.session_state.recovery_step = 1
+if 'recovery_token' not in st.session_state:
+    st.session_state.recovery_token = None
+if 'recovery_username' not in st.session_state:
+    st.session_state.recovery_username = None
 
 # Authentication Functions
 def hash_password(password):
@@ -1361,7 +1367,7 @@ def generate_detailed_report():
             </div>
         </div>
         <div class="footer">
-            <p>Task Assignment Tool v9.0 | Private Workspace Report</p>
+            <p>Task Assignment Tool v10.0 | Private Workspace Report</p>
         </div>
     </div>
     </body>
@@ -1456,9 +1462,7 @@ def show_login():
     with tab3:
         st.subheader("🔑 Password Recovery")
         
-        recovery_step = st.session_state.get('recovery_step', 1)
-        
-        if recovery_step == 1:
+        if st.session_state.recovery_step == 1:
             st.info("Enter your username to see your recovery hint")
             
             recovery_username = st.text_input("Username", key="recovery_username")
@@ -1475,10 +1479,11 @@ def show_login():
                         # Generate recovery token
                         token = generate_recovery_token(recovery_username)
                         if token:
-                            st.session_state['recovery_token'] = token
-                            st.session_state['recovery_username'] = recovery_username
-                            st.session_state['recovery_step'] = 2
-                            st.info("Click 'Continue to Reset Password' below")
+                            # Store in session state
+                            st.session_state.recovery_token = token
+                            st.session_state.recovery_username = recovery_username
+                            st.session_state.recovery_step = 2
+                            st.info("Click 'Continue' to reset your password")
                             
                             if st.button("Continue to Reset Password"):
                                 st.rerun()
@@ -1487,8 +1492,8 @@ def show_login():
                 else:
                     st.error("Please enter your username")
         
-        elif recovery_step == 2:
-            st.success(f"Recovery token generated for user: {st.session_state.get('recovery_username')}")
+        elif st.session_state.recovery_step == 2:
+            st.success(f"Recovery token generated for user: {st.session_state.recovery_username}")
             st.info("Enter your new password below")
             
             new_password = st.text_input("New Password", type="password", key="reset_password")
@@ -1505,13 +1510,14 @@ def show_login():
                             st.error("Password must be at least 6 characters")
                         else:
                             # Verify token and reset password
-                            if verify_recovery_token(st.session_state['recovery_username'], 
-                                                   st.session_state['recovery_token']):
-                                if reset_password(st.session_state['recovery_username'], new_password):
+                            if verify_recovery_token(st.session_state.recovery_username, 
+                                                   st.session_state.recovery_token):
+                                if reset_password(st.session_state.recovery_username, new_password):
                                     st.success("Password reset successfully! Please login with your new password.")
-                                    st.session_state['recovery_step'] = 1
-                                    del st.session_state['recovery_token']
-                                    del st.session_state['recovery_username']
+                                    # Clear recovery session state
+                                    st.session_state.recovery_step = 1
+                                    st.session_state.recovery_token = None
+                                    st.session_state.recovery_username = None
                                     time.sleep(2)
                                     st.rerun()
                                 else:
@@ -1523,11 +1529,9 @@ def show_login():
             
             with col2:
                 if st.button("Cancel", use_container_width=True):
-                    st.session_state['recovery_step'] = 1
-                    if 'recovery_token' in st.session_state:
-                        del st.session_state['recovery_token']
-                    if 'recovery_username' in st.session_state:
-                        del st.session_state['recovery_username']
+                    st.session_state.recovery_step = 1
+                    st.session_state.recovery_token = None
+                    st.session_state.recovery_username = None
                     st.rerun()
 
 # Add custom JavaScript for keep-alive
