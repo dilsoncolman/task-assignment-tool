@@ -1,11 +1,22 @@
 {
-  "tasks": {},
+  "tasks": {
+    "TASK_001": {
+      "name": "11111",
+      "priority": "P0 - Critical",
+      "languages": [
+        "Chinese",
+        "English"
+      ],
+      "created_at": "2026-03-09T08:31:06.465442",
+      "created_by": "Dilson"
+    }
+  },
   "assignments": {},
   "completed_tasks": [],
-  "task_counter": 2,
+  "task_counter": 1,
   "assignment_history": [],
   "last_modified": {
     "user": "Dilson",
-    "timestamp": "2026-03-09T08:31:05.953747"
+    "timestamp": "2026-03-09T08:31:06.795581"
   }
 }
