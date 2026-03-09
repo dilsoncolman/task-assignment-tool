@@ -12,41 +12,10 @@
   },
   "assignments": {
     "TASK_001": [
-      "Jhon Doe29",
-      "Jhon Doe1",
-      "Jhon Doe10",
-      "Jhon Doe11",
-      "Jhon Doe12",
-      "Jhon Doe13",
-      "Jhon Doe14",
-      "Jhon Doe15",
-      "Jhon Doe16",
-      "Jhon Doe17",
-      "Jhon Doe18",
-      "Jhon Doe19",
-      "Jhon Doe2",
-      "Jhon Doe20",
-      "Jhon Doe21",
-      "Jhon Doe22",
-      "Jhon Doe23",
-      "Jhon Doe24",
-      "Jhon Doe25",
-      "Jhon Doe26",
-      "Jhon Doe27",
-      "Jhon Doe28",
-      "Jhon Doe3",
-      "Jhon Doe30",
-      "Jhon Doe31",
-      "Jhon Doe32",
-      "Jhon Doe33",
-      "Jhon Doe34",
-      "Jhon Doe35",
-      "Jhon Doe4",
-      "Jhon Doe5",
-      "Jhon Doe6",
-      "Jhon Doe7",
-      "Jhon Doe8",
-      "Jhon Doe9"
+      "Antoine Le Naour",
+      "Benjamin Sam",
+      "Keith Kaup",
+      "Shaun Gouldson"
     ]
   },
   "completed_tasks": [],
@@ -471,10 +440,54 @@
         "English"
       ],
       "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "222222",
+      "tester": "Antoine Le Naour",
+      "assigned_at": "2026-03-09T08:32:11.299354",
+      "assigned_by": "jooohn",
+      "languages": [
+        "Spanish"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "222222",
+      "tester": "Benjamin Sam",
+      "assigned_at": "2026-03-09T08:32:11.299391",
+      "assigned_by": "jooohn",
+      "languages": [
+        "Spanish"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "222222",
+      "tester": "Keith Kaup",
+      "assigned_at": "2026-03-09T08:32:11.299402",
+      "assigned_by": "jooohn",
+      "languages": [
+        "Spanish"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_001",
+      "task_name": "222222",
+      "tester": "Shaun Gouldson",
+      "assigned_at": "2026-03-09T08:32:11.299409",
+      "assigned_by": "jooohn",
+      "languages": [
+        "Spanish"
+      ],
+      "priority": "P0 - Critical"
     }
   ],
   "last_modified": {
     "user": "jooohn",
-    "timestamp": "2026-03-09T08:32:10.493962"
+    "timestamp": "2026-03-09T08:32:11.488390"
   }
 }
