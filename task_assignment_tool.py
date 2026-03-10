@@ -12,7 +12,6 @@ import time
 import io
 import re
 import hashlib
-import secrets
 
 # Page config
 st.set_page_config(
@@ -28,7 +27,6 @@ GITHUB_BRANCH = st.secrets.get("github", {}).get("branch", "main")
 
 # User Authentication Configuration
 USERS_FILE = "users_auth.json"
-RECOVERY_TOKENS_FILE = "recovery_tokens.json"
 
 # Initialize session state
 if 'authenticated' not in st.session_state:
@@ -51,12 +49,6 @@ if 'file_upload_count' not in st.session_state:
     st.session_state.file_upload_count = 0
 if 'last_roster_count' not in st.session_state:
     st.session_state.last_roster_count = 0
-if 'recovery_step' not in st.session_state:
-    st.session_state.recovery_step = 1
-if 'recovery_token' not in st.session_state:
-    st.session_state.recovery_token = None
-if 'recovery_username' not in st.session_state:
-    st.session_state.recovery_username = None
 
 # Authentication Functions
 def hash_password(password):
@@ -115,119 +107,8 @@ def save_users(users_dict):
     except:
         return False
 
-def get_recovery_tokens():
-    """Load recovery tokens from GitHub"""
-    if not GITHUB_TOKEN or not GITHUB_REPO:
-        return {}
-    
-    try:
-        url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{RECOVERY_TOKENS_FILE}?ref={GITHUB_BRANCH}"
-        headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
-        response = requests.get(url, headers=headers)
-        
-        if response.status_code == 200:
-            content = response.json()
-            import base64
-            tokens = json.loads(base64.b64decode(content['content']).decode('utf-8'))
-            return tokens
-        elif response.status_code == 404:
-            return {}
-    except:
-        return {}
-    
-    return {}
-
-def save_recovery_tokens(tokens_dict):
-    """Save recovery tokens to GitHub"""
-    try:
-        import base64
-        content = base64.b64encode(json.dumps(tokens_dict, indent=2).encode('utf-8')).decode('utf-8')
-        
-        url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{RECOVERY_TOKENS_FILE}?ref={GITHUB_BRANCH}"
-        headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
-        response = requests.get(url, headers=headers)
-        
-        sha = None
-        if response.status_code == 200:
-            sha = response.json()['sha']
-        
-        payload = {
-            "message": f"Update recovery tokens - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}",
-            "content": content,
-            "branch": GITHUB_BRANCH
-        }
-        if sha:
-            payload["sha"] = sha
-        
-        response = requests.put(url, json=payload, headers=headers)
-        return response.status_code in [200, 201]
-    except:
-        return False
-
-def generate_recovery_token(username):
-    """Generate a recovery token for password reset"""
-    token = secrets.token_urlsafe(32)
-    tokens = get_recovery_tokens()
-    
-    # Clean up old tokens (older than 1 hour)
-    current_time = datetime.now()
-    tokens_to_remove = []
-    for user, token_data in tokens.items():
-        if 'created_at' in token_data:
-            created_time = datetime.fromisoformat(token_data['created_at'])
-            if (current_time - created_time).total_seconds() > 3600:  # 1 hour
-                tokens_to_remove.append(user)
-    
-    for user in tokens_to_remove:
-        del tokens[user]
-    
-    # Add new token
-    tokens[username] = {
-        'token': token,
-        'created_at': current_time.isoformat()
-    }
-    
-    if save_recovery_tokens(tokens):
-        return token
-    return None
-
-def verify_recovery_token(username, token):
-    """Verify a recovery token"""
-    tokens = get_recovery_tokens()
-    
-    if username not in tokens:
-        return False
-    
-    token_data = tokens[username]
-    if token_data['token'] != token:
-        return False
-    
-    # Check if token is expired (1 hour)
-    created_time = datetime.fromisoformat(token_data['created_at'])
-    if (datetime.now() - created_time).total_seconds() > 3600:
-        return False
-    
-    return True
-
-def reset_password(username, new_password):
-    """Reset user password"""
-    users = get_users()
-    
-    if username not in users:
-        return False
-    
-    users[username]['password'] = hash_password(new_password)
-    
-    # Remove recovery token
-    tokens = get_recovery_tokens()
-    if username in tokens:
-        del tokens[username]
-        save_recovery_tokens(tokens)
-    
-    return save_users(users)
-
-def register_user(username, password, display_name, recovery_hint):
-    """Register a new user with recovery hint"""
+def register_user(username, password, display_name, security_question, security_answer):
+    """Register a new user with security question"""
     users = get_users()
     
     if username in users:
@@ -236,7 +117,8 @@ def register_user(username, password, display_name, recovery_hint):
     users[username] = {
         "password": hash_password(password),
         "display_name": display_name,
-        "recovery_hint": recovery_hint,  # Store hint for password recovery
+        "security_question": security_question,
+        "security_answer": hash_password(security_answer.lower()),  # Hash the answer too
         "created_at": datetime.now().isoformat(),
         "data_file": f"user_{username}_data.json"
     }
@@ -256,6 +138,26 @@ def authenticate_user(username, password):
         return True, users[username]
     
     return False, "Invalid password"
+
+def verify_security_answer(username, answer):
+    """Verify security answer"""
+    users = get_users()
+    
+    if username not in users:
+        return False
+    
+    stored_answer = users[username].get("security_answer", "")
+    return stored_answer == hash_password(answer.lower())
+
+def reset_password(username, new_password):
+    """Reset user password"""
+    users = get_users()
+    
+    if username not in users:
+        return False
+    
+    users[username]['password'] = hash_password(new_password)
+    return save_users(users)
 
 def get_user_data_file():
     """Get the data file for current user"""
@@ -1367,7 +1269,7 @@ def generate_detailed_report():
             </div>
         </div>
         <div class="footer">
-            <p>Task Assignment Tool v10.0 | Private Workspace Report</p>
+            <p>Task Assignment Tool v11.0 | Private Workspace Report</p>
         </div>
     </div>
     </body>
@@ -1431,16 +1333,29 @@ def show_login():
         display_name = st.text_input("Display Name", key="reg_display", 
                                    placeholder="e.g., John Smith")
         
-        # Recovery hint for password recovery
-        recovery_hint = st.text_input("Recovery Hint", key="reg_hint",
-                                    placeholder="e.g., Your pet's name or favorite teacher",
-                                    help="This will help you recover your password if forgotten")
+        # Security question for password recovery
+        security_questions = [
+            "What was the name of your first pet?",
+            "What is your mother's maiden name?",
+            "What was the name of your elementary school?",
+            "What is your favorite movie?",
+            "What city were you born in?",
+            "What was your childhood nickname?",
+            "What is the name of your favorite teacher?",
+            "What was the make of your first car?",
+            "What is your favorite food?",
+            "What was the name of your best friend in school?"
+        ]
+        
+        security_question = st.selectbox("Security Question", security_questions, key="reg_question")
+        security_answer = st.text_input("Security Answer", key="reg_answer",
+                                      help="This answer will be used to recover your password. It's case-insensitive.")
         
         new_password = st.text_input("Password", type="password", key="reg_password")
         confirm_password = st.text_input("Confirm Password", type="password", key="reg_confirm")
         
         if st.button("📝 Register", type="primary", use_container_width=True):
-            if new_username and display_name and new_password and recovery_hint:
+            if new_username and display_name and new_password and security_answer:
                 # Validate username
                 if not re.match("^[a-z0-9_]+$", new_username):
                     st.error("Username can only contain lowercase letters, numbers, and underscores")
@@ -1448,8 +1363,11 @@ def show_login():
                     st.error("Passwords don't match")
                 elif len(new_password) < 6:
                     st.error("Password must be at least 6 characters")
+                elif len(security_answer.strip()) < 2:
+                    st.error("Security answer must be at least 2 characters")
                 else:
-                    success, message = register_user(new_username, new_password, display_name, recovery_hint)
+                    success, message = register_user(new_username, new_password, display_name, 
+                                                   security_question, security_answer.strip())
                     if success:
                         st.success(message + " - Please login now")
                         time.sleep(2)
@@ -1462,77 +1380,47 @@ def show_login():
     with tab3:
         st.subheader("🔑 Password Recovery")
         
-        if st.session_state.recovery_step == 1:
-            st.info("Enter your username to see your recovery hint")
+        with st.form("password_recovery_form"):
+            recovery_username = st.text_input("Username")
             
-            recovery_username = st.text_input("Username", key="recovery_username")
+            submitted = st.form_submit_button("Get Security Question", type="primary", use_container_width=True)
             
-            if st.button("Get Recovery Hint", type="primary", use_container_width=True):
-                if recovery_username:
-                    users = get_users()
-                    if recovery_username in users:
-                        user_data = users[recovery_username]
-                        recovery_hint = user_data.get('recovery_hint', 'No recovery hint set')
+            if submitted and recovery_username:
+                users = get_users()
+                if recovery_username in users:
+                    user_data = users[recovery_username]
+                    security_question = user_data.get('security_question', 'No security question set')
+                    
+                    st.info(f"**Security Question**: {security_question}")
+                    
+                    # Show answer form
+                    with st.form("answer_form"):
+                        security_answer = st.text_input("Your Answer")
+                        new_password = st.text_input("New Password", type="password")
+                        confirm_password = st.text_input("Confirm New Password", type="password")
                         
-                        st.success(f"**Recovery Hint**: {recovery_hint}")
+                        reset_submitted = st.form_submit_button("Reset Password", type="primary", use_container_width=True)
                         
-                        # Generate recovery token
-                        token = generate_recovery_token(recovery_username)
-                        if token:
-                            # Store in session state
-                            st.session_state.recovery_token = token
-                            st.session_state.recovery_username = recovery_username
-                            st.session_state.recovery_step = 2
-                            st.info("Click 'Continue' to reset your password")
-                            
-                            if st.button("Continue to Reset Password"):
-                                st.rerun()
-                    else:
-                        st.error("Username not found")
-                else:
-                    st.error("Please enter your username")
-        
-        elif st.session_state.recovery_step == 2:
-            st.success(f"Recovery token generated for user: {st.session_state.recovery_username}")
-            st.info("Enter your new password below")
-            
-            new_password = st.text_input("New Password", type="password", key="reset_password")
-            confirm_password = st.text_input("Confirm New Password", type="password", key="reset_confirm")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                if st.button("Reset Password", type="primary", use_container_width=True):
-                    if new_password and confirm_password:
-                        if new_password != confirm_password:
-                            st.error("Passwords don't match")
-                        elif len(new_password) < 6:
-                            st.error("Password must be at least 6 characters")
-                        else:
-                            # Verify token and reset password
-                            if verify_recovery_token(st.session_state.recovery_username, 
-                                                   st.session_state.recovery_token):
-                                if reset_password(st.session_state.recovery_username, new_password):
-                                    st.success("Password reset successfully! Please login with your new password.")
-                                    # Clear recovery session state
-                                    st.session_state.recovery_step = 1
-                                    st.session_state.recovery_token = None
-                                    st.session_state.recovery_username = None
-                                    time.sleep(2)
-                                    st.rerun()
+                        if reset_submitted:
+                            if security_answer and new_password and confirm_password:
+                                if verify_security_answer(recovery_username, security_answer):
+                                    if new_password != confirm_password:
+                                        st.error("Passwords don't match")
+                                    elif len(new_password) < 6:
+                                        st.error("Password must be at least 6 characters")
+                                    else:
+                                        if reset_password(recovery_username, new_password):
+                                            st.success("✅ Password reset successfully! Please login with your new password.")
+                                            time.sleep(2)
+                                            st.rerun()
+                                        else:
+                                            st.error("Failed to reset password")
                                 else:
-                                    st.error("Failed to reset password")
+                                    st.error("❌ Incorrect security answer")
                             else:
-                                st.error("Recovery token expired or invalid")
-                    else:
-                        st.error("Please enter and confirm your new password")
-            
-            with col2:
-                if st.button("Cancel", use_container_width=True):
-                    st.session_state.recovery_step = 1
-                    st.session_state.recovery_token = None
-                    st.session_state.recovery_username = None
-                    st.rerun()
+                                st.error("Please fill all fields")
+                else:
+                    st.error("Username not found")
 
 # Add custom JavaScript for keep-alive
 st.markdown("""
@@ -2373,14 +2261,14 @@ else:
 st.divider()
 col1, col2 = st.columns([3, 1])
 with col1:
-    st.caption("Team Task Assignment Tool v10.0 | Private User Workspaces | Secure Authentication with Password Recovery")
+    st.caption("Team Task Assignment Tool v11.0 | Private User Workspaces | Security Question Recovery")
 with col2:
     with st.expander("💡 Tips"):
         st.markdown("""
         **Security Features:**
         - Each user has their own private workspace
         - Passwords are hashed for security
-        - Password recovery with hint system
+        - Security questions for password recovery
         - Data is completely isolated between users
         
         **Username Requirements:**
@@ -2388,8 +2276,8 @@ with col2:
         - Examples: john_smith, user123, test_account
         
         **Password Recovery:**
-        - Use the recovery hint you set during registration
-        - Reset tokens expire after 1 hour
+        - Answer your security question to reset password
+        - Security answers are case-insensitive
         
         **To prevent app from sleeping:**
         - Keep the tab open and active
