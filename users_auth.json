@@ -24,5 +24,13 @@
     "recovery_hint": "spyke",
     "created_at": "2026-03-09T11:48:21.718967",
     "data_file": "user_dilson4_data.json"
+  },
+  "dilson5": {
+    "password": "1326de082a8c512e231752f57145e95ada056f2d6cc680ec35ce80c0a6ec363d",
+    "display_name": "d colman 5",
+    "security_question": "What was the name of your first pet?",
+    "security_answer": "0234e4d93cb1a6e9c03a45f95e93506b2cdbafe4b9ecc4deef8b27b9ae16e426",
+    "created_at": "2026-03-11T11:15:47.747307",
+    "data_file": "user_dilson5_data.json"
   }
 }
