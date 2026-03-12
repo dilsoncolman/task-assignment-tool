@@ -31,7 +31,25 @@
       "Esther Weber"
     ]
   },
-  "completed_tasks": [],
+  "completed_tasks": [
+    {
+      "task_id": "TASK_001",
+      "task_name": "teste1",
+      "completed_by": "D Colman",
+      "completed_at": "2026-03-12T09:05:29.044058",
+      "assignees": [
+        "Angela Brauer",
+        "Frederik Fagerlund"
+      ],
+      "languages": [
+        "Danish",
+        "Chinese"
+      ],
+      "priority": "P0 - Critical",
+      "created_by": "D Colman",
+      "created_at": "2026-03-09T10:22:41.194179"
+    }
+  ],
   "task_counter": 2,
   "assignment_history": [
     {
@@ -83,6 +101,6 @@
   ],
   "last_modified": {
     "user": "D Colman",
-    "timestamp": "2026-03-12T08:57:28.833564"
+    "timestamp": "2026-03-12T09:05:29.231871"
   }
 }
