@@ -10,6 +10,15 @@
       ],
       "created_at": "2026-03-09T10:22:41.194179",
       "created_by": "D Colman"
+    },
+    "TASK_002": {
+      "name": "t1t1t1",
+      "priority": "P0 - Critical",
+      "languages": [
+        "French"
+      ],
+      "created_at": "2026-03-12T08:57:27.447099",
+      "created_by": "D Colman"
     }
   },
   "assignments": {
@@ -19,7 +28,7 @@
     ]
   },
   "completed_tasks": [],
-  "task_counter": 3,
+  "task_counter": 2,
   "assignment_history": [
     {
       "task_id": "TASK_001",
@@ -48,6 +57,6 @@
   ],
   "last_modified": {
     "user": "D Colman",
-    "timestamp": "2026-03-12T08:57:26.947205"
+    "timestamp": "2026-03-12T08:57:27.932899"
   }
 }
