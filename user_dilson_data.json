@@ -46,6 +46,16 @@
       "John Doe26",
       "John Doe27",
       "John Doe35"
+    ],
+    "TASK_003": [
+      "John Doe15",
+      "John Doe17",
+      "John Doe19",
+      "John Doe24",
+      "John Doe25",
+      "John Doe26",
+      "John Doe27",
+      "John Doe35"
     ]
   },
   "completed_tasks": [
@@ -226,10 +236,106 @@
         "Italian"
       ],
       "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_003",
+      "task_name": "Task 008",
+      "tester": "John Doe15",
+      "assigned_at": "2026-04-11T18:58:19.562020",
+      "assigned_by": "D Colman",
+      "languages": [
+        "Portuguese",
+        "Italian"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_003",
+      "task_name": "Task 008",
+      "tester": "John Doe17",
+      "assigned_at": "2026-04-11T18:58:19.562064",
+      "assigned_by": "D Colman",
+      "languages": [
+        "Portuguese",
+        "Italian"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_003",
+      "task_name": "Task 008",
+      "tester": "John Doe19",
+      "assigned_at": "2026-04-11T18:58:19.562073",
+      "assigned_by": "D Colman",
+      "languages": [
+        "Portuguese",
+        "Italian"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_003",
+      "task_name": "Task 008",
+      "tester": "John Doe24",
+      "assigned_at": "2026-04-11T18:58:19.562079",
+      "assigned_by": "D Colman",
+      "languages": [
+        "Portuguese",
+        "Italian"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_003",
+      "task_name": "Task 008",
+      "tester": "John Doe25",
+      "assigned_at": "2026-04-11T18:58:19.562085",
+      "assigned_by": "D Colman",
+      "languages": [
+        "Portuguese",
+        "Italian"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_003",
+      "task_name": "Task 008",
+      "tester": "John Doe26",
+      "assigned_at": "2026-04-11T18:58:19.562090",
+      "assigned_by": "D Colman",
+      "languages": [
+        "Portuguese",
+        "Italian"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_003",
+      "task_name": "Task 008",
+      "tester": "John Doe27",
+      "assigned_at": "2026-04-11T18:58:19.562096",
+      "assigned_by": "D Colman",
+      "languages": [
+        "Portuguese",
+        "Italian"
+      ],
+      "priority": "P0 - Critical"
+    },
+    {
+      "task_id": "TASK_003",
+      "task_name": "Task 008",
+      "tester": "John Doe35",
+      "assigned_at": "2026-04-11T18:58:19.562101",
+      "assigned_by": "D Colman",
+      "languages": [
+        "Portuguese",
+        "Italian"
+      ],
+      "priority": "P0 - Critical"
     }
   ],
   "last_modified": {
     "user": "D Colman",
-    "timestamp": "2026-04-11T18:58:18.924817"
+    "timestamp": "2026-04-11T18:58:19.713876"
   }
 }
